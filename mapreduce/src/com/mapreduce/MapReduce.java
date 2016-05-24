@@ -1,7 +1,13 @@
 package com.mapreduce;
 
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.*;
 import java.util.concurrent.*;
+
+
 
 public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValue, IntermediateKey extends Comparable<IntermediateKey>, IntermediateValue, OutputReduceKey, OutputReduceValue> {
 
@@ -10,6 +16,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
     private InputData<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue> inputData;
     private OutputData<OutputReduceKey, OutputReduceValue> outputData;
+    private static Logger logger = LogManager.getLogger(MapReduce.class.getName());
 
 	/*
 	 * phase_mp变量确定执行Mapreduce的哪个阶段
@@ -72,51 +79,60 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 3.把结果保存在inputdata中，并行运行MapWork
      * 4.1.-3.重复运行
      */
-    private void startMap() {
+    public void startMap() {
+        logger.debug("Map阶段启动");
         List<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>> mappers = new ArrayList<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(this.parallelThreadNum);
         List<FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>> maptasks = new ArrayList<FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>>(this.parallelThreadNum);
         ExecutorService executor = Executors.newFixedThreadPool(this.parallelThreadNum);
-
-
+        //将剩余所有initKeyValue存入InitialKeyValue_list中
+//        inputData.putInitialKeyValueToInitialKeyValue_queue();
         for (int i = 0; i < this.parallelThreadNum; i++) {
             mappers.add(initializeMapper());
             maptasks.add(new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>()));
         }
 
+        SpillThread thread = new SpillThread();
+        thread.start();
+//        for (int k=0;k<this.inputData.initialKeyValue_queue.size();k++) {
+//            inputData.getKeyValueFromQueue();
 
-        int x = this.inputData.getMapSize() / this.parallelThreadNum;//每个线程处理的inputdata键值对个数
-        for (int i = 0; i < this.inputData.getMapSize() / this.parallelThreadNum; i++) {
-            for (int j = 0; j < this.parallelThreadNum; j++) {
-                mappers.set(j, initializeMapper());
-                mappers.get(j).setKeyValue(this.inputData.getMapKey(i + j * x), this.inputData.getMapValue(i + j * x));
-                maptasks.set(j, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(j))));
+            int x = this.inputData.getMapSize() / this.parallelThreadNum;//每个线程处理的inputdata键值对个数
+            for (int i = 0; i < this.inputData.getMapSize() / this.parallelThreadNum; i++) {
+                for (int j = 0; j < this.parallelThreadNum; j++) {
+                    mappers.set(j, initializeMapper());
+                    mappers.get(j).setKeyValue(this.inputData.getMapKey(i + j * x), this.inputData.getMapValue(i + j * x));
+                    maptasks.set(j, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(j))));
+                }
+
+                try {
+                    MapWork(mappers, maptasks, executor);
+                } catch (OutOfMemoryError e) {
+                    System.out.println(i);
+                    System.exit(1);
+                }
             }
 
-            try {
+            if (this.inputData.getMapSize() % this.parallelThreadNum != 0) {
+                int finishedsize = (this.inputData.getMapSize() / this.parallelThreadNum) * this.parallelThreadNum;
+                for (int i = 0; i < this.inputData.getMapSize() % this.parallelThreadNum; i++) {
+                    mappers.set(i, initializeMapper());
+                    mappers.get(i).setKeyValue(this.inputData.getMapKey(finishedsize + i), this.inputData.getMapValue(finishedsize + i));
+                    maptasks.set(i, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(i))));
+                }
+
                 MapWork(mappers, maptasks, executor);
-            } catch (OutOfMemoryError e) {
-                System.out.println(i);
-                System.exit(1);
             }
-        }
-
-
-        if (this.inputData.getMapSize() % this.parallelThreadNum != 0) {
-            int finishedsize = (this.inputData.getMapSize() / this.parallelThreadNum) * this.parallelThreadNum;
-            for (int i = 0; i < this.inputData.getMapSize() % this.parallelThreadNum; i++) {
-                mappers.set(i, initializeMapper());
-                mappers.get(i).setKeyValue(this.inputData.getMapKey(finishedsize + i), this.inputData.getMapValue(finishedsize + i));
-                maptasks.set(i, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(i))));
-            }
-
-            MapWork(mappers, maptasks, executor);
-        }
-
+//            inputData.initialKeyValue.clear();
+//        }
+        //inputData.serializeMapOutData();
         mappers = null;
         maptasks = null;
         //完成Map阶段所有计算释放map阶段中initialKeyValue键值对的存储空间
         this.inputData.initialRelease();
         executor.shutdown();
+        thread.interrupt();
+        logger.debug("Map阶段结束");
+
     }
 
     private void MapWork(
@@ -165,9 +181,13 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 1.排序
      * 2.合并
      */
-    private void startShuffle() {
+    public void startShuffle() {
+        logger.debug("排序阶段开始");
         this.inputData.cSort();
+        logger.debug("排序阶段结束");
+        logger.debug("Grouping 开始");
         this.inputData.grouping();
+        logger.debug("Grouping 结束");
     }
 
 
@@ -179,7 +199,8 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 3.ReduceWor运行结果保存在outputData中
      * 4.1.-3.重复运行
      */
-    private void startReduce() {
+    public void startReduce() {
+        logger.debug("Reduce阶段开始");
         List<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>> reducers = new ArrayList<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>(this.parallelThreadNum);
         List<FutureTask<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>> reducetasks = new ArrayList<FutureTask<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>>(this.parallelThreadNum);
         ExecutorService executor = Executors.newFixedThreadPool(this.parallelThreadNum);
@@ -215,6 +236,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         reducers = null;
         reducetasks = null;
         executor.shutdown();
+        logger.debug("Reduce阶段结束");
     }
 
     /**
@@ -268,24 +290,41 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 执行MapReduce
      */
     public void run() {
+//        startMap();
+//
+//        if (this.phaseMR.equals("MAP_ONLY")) {
+//            if (this.resultOutput)
+//                //inputData.showMap();
+//            return;
+//        }
+//
+//        startShuffle();
+//        if (this.phaseMR.equals("MAP_SHUFFLE")) {
+//            if (this.resultOutput)
+//                inputData.showSuffle();
+//            return;
+//        }
+//        startReduce();
+//        if (this.resultOutput)
+//            outputData.reduceShow();
+        logger.debug("==================启动Map阶段=======================");
         startMap();
-        if (this.phaseMR.equals("MAP_ONLY")) {
-            if (this.resultOutput)
-                inputData.showMap();
-            return;
-        }
-
+        logger.debug("==================Map阶段结束=======================");
+        logger.debug("================启动Shuffle阶段=====================");
         startShuffle();
-        if (this.phaseMR.equals("MAP_SHUFFLE")) {
-            if (this.resultOutput)
-                inputData.showSuffle();
-            return;
-        }
+        logger.debug("==================Shuffle阶段结束===================");
+        logger.debug("==================启动Reduce阶段====================");
         startReduce();
-        if (this.resultOutput)
-            outputData.reduceShow();
+        logger.debug("==================Reduce阶段结束====================");
+
+
+
 
     }
+    public void writeToFile(){
+        outputData.writeToFile();
+    }
+
 
     /**
      * 获取MapReduce处理完成后的key集合
@@ -300,5 +339,22 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     public List<OutputReduceValue> getValues() {
         return this.outputData.getOutputValues();
     }
+
+    class SpillThread extends Thread {
+        @Override
+        public void run(){
+                while (true) {
+                    if (inputData.getMappedKeyValueSize() > 200000 * 0.8) {
+                        logger.debug("触发缓存溢写操作");
+                        inputData.spillWrite();
+                        break;
+                    }
+                }
+        }
+    }
+
+
+
+
 }
 
