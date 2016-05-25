@@ -344,7 +344,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         @Override
         public void run(){
                 while (true) {
-                    if (inputData.getMappedKeyValueSize() > 200000 * 0.8) {
+                    if (inputData.getMappedKeyValueSize() > 5000000 * 0.8) {
                         logger.debug("触发缓存溢写操作");
                         inputData.spillWrite();
                         break;

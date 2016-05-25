@@ -2,13 +2,11 @@ package com.mapreduce;
 
 import com.sun.jmx.remote.internal.ArrayQueue;
 import jdk.nashorn.internal.runtime.arrays.ArrayLikeIterator;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -27,13 +25,15 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     List<GroupedKeyValue<IntermediateKey, IntermediateValue>> gKVList;
     List<KeyValue<IntermediateKey, IntermediateValue>> list = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
 //    Queue<List<KeyValue<InputMapKey, InputMapValue>>> initialKeyValue_queue = new LinkedList<List<KeyValue<InputMapKey, InputMapValue>>>();
-    int serializeCount = 0;
+    int spillfileCount = 0;
+    int spillCount = 0;
     private static Logger logger = LogManager.getLogger(InputData.class.getName());
+    int setcount = 0;
 
 
     InputData() {
         this.initialKeyValue = new ArrayList<KeyValue<InputMapKey, InputMapValue>>();
-        this.mappedKeyValue = new LinkedBlockingQueue<KeyValue<IntermediateKey, IntermediateValue>>(200000);
+        this.mappedKeyValue = new LinkedBlockingQueue<KeyValue<IntermediateKey, IntermediateValue>>(5000000);
         this.gKVList = new ArrayList<GroupedKeyValue<IntermediateKey, IntermediateValue>>();
     }
 
@@ -88,24 +88,26 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
 
     void setMap(IntermediateKey k, IntermediateValue v) {
+
+//        logger.debug(setcount++);
         try {
             this.mappedKeyValue.put(new KeyValue<IntermediateKey, IntermediateValue>(k, v));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
-
-    public void serializeMapOutData() {
-		try {
-
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("MapOutData_"+serializeCount+".dat"));
-			out.writeObject(mappedKeyValue);
-			out.close();
-			serializeCount++;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-    }
+//
+//    public void serializeMapOutData() {
+//		try {
+//
+//			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("MapOutData_"+serializeCount+".dat"));
+//			out.writeObject(mappedKeyValue);
+//			out.close();
+//			serializeCount++;
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//    }
 
     /*
      * 显示Map阶段后的键值对
@@ -198,17 +200,26 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                     list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
                 }
 //                logger.debug(list.size());
-                list.add(mappedKeyValue.take());
-//                if(list.size()>5000000) {
-//                    logger.debug("序列化List");
-//                    serializeMapOutData();
-//                    list=null;
-//                }
+//                list.add(mappedKeyValue.take());
+                writeKeyValue(mappedKeyValue.take());
+                if(spillCount>2000000) {
+                    logger.debug("spillcount++");
+                    spillfileCount++;
+                    spillCount=0;
+                }
             } catch (InterruptedException e) {
                 break;
             }
         }
-        logger.exit();
+    }
+    public void writeKeyValue(KeyValue<IntermediateKey, IntermediateValue> keyValue){
+        spillCount++;
+        File srcFile = new File("MapOutData_"+spillfileCount+".txt");
+        try {
+            FileUtils.writeStringToFile(srcFile,keyValue.getKey().toString()+","+keyValue.getValue().toString()+"\n","utf-8",true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 }
