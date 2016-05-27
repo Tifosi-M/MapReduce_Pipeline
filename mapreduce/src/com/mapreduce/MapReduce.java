@@ -1,12 +1,15 @@
 package com.mapreduce;
 
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-
 
 
 public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValue, IntermediateKey extends Comparable<IntermediateKey>, IntermediateValue, OutputReduceKey, OutputReduceValue> {
@@ -17,9 +20,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     private InputData<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue> inputData;
     private OutputData<OutputReduceKey, OutputReduceValue> outputData;
     private static Logger logger = LogManager.getLogger(MapReduce.class.getName());
+    private int spillfileCount = 0;
+    private List<SpillThread>list_thread = new ArrayList<SpillThread>();
 
 	/*
-	 * phase_mp变量确定执行Mapreduce的哪个阶段
+     * phase_mp变量确定执行Mapreduce的哪个阶段
 	 * phase_mp为"MAP_ONLY"只进行map处理
 	 * "MAP_SHUFFLE"为进行Map和Shuffle,
 	 * "MAP_REDUCE"执行Map、Shuffle、Reduce三个阶段
@@ -91,37 +96,36 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             maptasks.add(new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>()));
         }
 
-        SpillThread thread = new SpillThread();
-        thread.start();
+
 //        for (int k=0;k<this.inputData.initialKeyValue_queue.size();k++) {
 //            inputData.getKeyValueFromQueue();
 
-            int x = this.inputData.getMapSize() / this.parallelThreadNum;//每个线程处理的inputdata键值对个数
-            for (int i = 0; i < this.inputData.getMapSize() / this.parallelThreadNum; i++) {
-                for (int j = 0; j < this.parallelThreadNum; j++) {
-                    mappers.set(j, initializeMapper());
-                    mappers.get(j).setKeyValue(this.inputData.getMapKey(i + j * x), this.inputData.getMapValue(i + j * x));
-                    maptasks.set(j, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(j))));
-                }
-
-                try {
-                    MapWork(mappers, maptasks, executor);
-                } catch (OutOfMemoryError e) {
-                    System.out.println(i);
-                    System.exit(1);
-                }
+        int x = this.inputData.getMapSize() / this.parallelThreadNum;//每个线程处理的inputdata键值对个数
+        for (int i = 0; i < this.inputData.getMapSize() / this.parallelThreadNum; i++) {
+            for (int j = 0; j < this.parallelThreadNum; j++) {
+                mappers.set(j, initializeMapper());
+                mappers.get(j).setKeyValue(this.inputData.getMapKey(i + j * x), this.inputData.getMapValue(i + j * x));
+                maptasks.set(j, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(j))));
             }
 
-            if (this.inputData.getMapSize() % this.parallelThreadNum != 0) {
-                int finishedsize = (this.inputData.getMapSize() / this.parallelThreadNum) * this.parallelThreadNum;
-                for (int i = 0; i < this.inputData.getMapSize() % this.parallelThreadNum; i++) {
-                    mappers.set(i, initializeMapper());
-                    mappers.get(i).setKeyValue(this.inputData.getMapKey(finishedsize + i), this.inputData.getMapValue(finishedsize + i));
-                    maptasks.set(i, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(i))));
-                }
-
+            try {
                 MapWork(mappers, maptasks, executor);
+            } catch (OutOfMemoryError e) {
+                System.out.println(i);
+                System.exit(1);
             }
+        }
+
+        if (this.inputData.getMapSize() % this.parallelThreadNum != 0) {
+            int finishedsize = (this.inputData.getMapSize() / this.parallelThreadNum) * this.parallelThreadNum;
+            for (int i = 0; i < this.inputData.getMapSize() % this.parallelThreadNum; i++) {
+                mappers.set(i, initializeMapper());
+                mappers.get(i).setKeyValue(this.inputData.getMapKey(finishedsize + i), this.inputData.getMapValue(finishedsize + i));
+                maptasks.set(i, new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>(mappers.get(i))));
+            }
+
+            MapWork(mappers, maptasks, executor);
+        }
 //            inputData.initialKeyValue.clear();
 //        }
         //inputData.serializeMapOutData();
@@ -130,7 +134,6 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         //完成Map阶段所有计算释放map阶段中initialKeyValue键值对的存储空间
         this.inputData.initialRelease();
         executor.shutdown();
-        thread.interrupt();
         logger.debug("Map阶段结束");
 
     }
@@ -150,8 +153,17 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             for (int i = 0; i < this.parallelThreadNum; i++) {
                 List<IntermediateKey> resultMapKeys = maptasks.get(i).get().getKeys();
                 List<IntermediateValue> resultMapValues = maptasks.get(i).get().getValues();
-                for (int j = 0; j < resultMapKeys.size(); j++)
+                for (int j = 0; j < resultMapKeys.size(); j++) {
+                    if (this.inputData.getMappedKeyValueSize() > 10000000 * 0.8) {
+                        SpillThread thread = new SpillThread();
+                        thread.setSpill_list(inputData.mappedKeyValue);
+                        thread.setCount(++spillfileCount);
+                        inputData.mappedKeyValue = inputData.instanceMapedKeyValue();
+                        list_thread.add(thread);
+                        thread.start();
+                    }
                     this.inputData.setMap(resultMapKeys.get(j), resultMapValues.get(j));
+                }
             }
         } catch (InterruptedException e) {
             e.getCause().printStackTrace();
@@ -182,11 +194,18 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 2.合并
      */
     public void startShuffle() {
+        for(SpillThread thread:list_thread){
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         logger.debug("排序阶段开始");
-        this.inputData.cSort();
+//        this.spillMerge();
         logger.debug("排序阶段结束");
         logger.debug("Grouping 开始");
-        this.inputData.grouping();
+        this.grouping();
         logger.debug("Grouping 结束");
     }
 
@@ -318,10 +337,9 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         logger.debug("==================Reduce阶段结束====================");
 
 
-
-
     }
-    public void writeToFile(){
+
+    public void writeToFile() {
         outputData.writeToFile();
     }
 
@@ -341,19 +359,118 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     }
 
     class SpillThread extends Thread {
+        private List<KeyValue<IntermediateKey, IntermediateValue>> spill_list;
+        private int count;
+        public void setSpill_list(List<KeyValue<IntermediateKey, IntermediateValue>> list) {
+            spill_list = list;
+        }
+        public void setCount(int count){this.count = count;}
         @Override
-        public void run(){
-                while (true) {
-                    if (inputData.getMappedKeyValueSize() > 5000000 * 0.8) {
-                        logger.debug("触发缓存溢写操作");
-                        inputData.spillWrite();
-                        break;
-                    }
+        public void run() {
+            logger.debug("缓存溢写线程启动" + count);
+            Collections.sort(spill_list);
+            logger.debug("缓存溢写排序介绍"+count+".."+spill_list.size());
+            File srcFile = new File("MapOutData_" + count + ".txt");
+            try {
+                for (int i = 0; i < spill_list.size(); i++) {
+                    FileUtils.writeStringToFile(srcFile, spill_list.remove(0).getKey().toString() + " " + spill_list.remove(0).getValue().toString() + "\n", "utf-8", true);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            spill_list = null;
+            logger.debug("缓存溢写线程结束");
         }
     }
 
+    public void spillMerge() {
+        LineIterator it1 = null;
+        LineIterator it2 = null;
+        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_1 = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
+        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_2 = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
+        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_out = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
+        try {
+            it1 = FileUtils.lineIterator(new File("MapOutData_1.txt"), "UTF-8");
+            it2 = FileUtils.lineIterator(new File("MapOutData_2.txt"), "UTF-8");
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            while (it1.hasNext()) {
+                String line = it1.nextLine();
+                String[] str = line.split(" ");
+                IntermediateKey key = (IntermediateKey) str[0];
+                IntermediateValue value = (IntermediateValue) str[1];
+                list_1.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+            }
+        } finally {
+            LineIterator.closeQuietly(it1);
+        }
+        try {
+            while (it2.hasNext()) {
+                String line = it2.nextLine();
+                String[] str = line.split(" ");
+                IntermediateKey key = (IntermediateKey) str[0];
+                IntermediateValue value = (IntermediateValue) str[1];
+                list_2.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+            }
+        } finally {
+            LineIterator.closeQuietly(it2);
+        }
+        while (list_1.size() != 0 || list_2.size() != 0) {
+            if (list_1.size() != 0 && list_2.size() != 0) {
+                KeyValue<IntermediateKey, IntermediateValue> keyValue1 = list_1.get(0);
+                KeyValue<IntermediateKey, IntermediateValue> keyValue2 = list_2.get(0);
+                if (keyValue1.compareTo(keyValue2) < 0) {
+                    list_out.add(keyValue1);
+                    list_1.remove(0);
+                } else {
+                    list_out.add(keyValue2);
+                    list_2.remove(0);
+                }
+            }else{
+                if(list_1.size()==0){
+                    list_out.add(list_2.remove(0));
+                }else{
+                    list_out.add(list_1.remove(0));
+                }
+            }
+        }
+
+        try {
+            for (int i = 0; i < list_out.size(); i++) {
+                FileUtils.writeStringToFile(new File("MapOutData_out.txt"), list_out.remove(0).getKey().toString() + " " + list_out.remove(0).getValue().toString() + "\n", "utf-8", true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        logger.debug("merge结束");
+    }
+    public void grouping() {
+        File srcFile = new File("MapOutData_out.txt");
+        LineIterator it = null;
+        try {
+            it = FileUtils.lineIterator(srcFile, "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                String[] str = line.split(" ");
+                IntermediateKey key = (IntermediateKey) str[0];
+                IntermediateValue value = (IntermediateValue)(Integer.valueOf(str[1]));
+                this.inputData.list.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+            }
+        }catch (ArrayIndexOutOfBoundsException e){
+            e.printStackTrace();
+
+        }finally {
+            LineIterator.closeQuietly(it);
+        }
+        inputData.grouping();
+    }
 
 
 }

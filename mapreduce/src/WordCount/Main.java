@@ -18,6 +18,7 @@ public class Main {
 
 		try {
 			readFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/2.txt");
+			readFile("2.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -31,18 +32,6 @@ public class Main {
 	public void readFile(String filename) throws IOException {
 		int count=0;
 		logger.debug("开始读取文件");
-//		try{
-//			FileReader file = new FileReader(filename);
-//			BufferedReader buffer = new BufferedReader(file);
-//			String s;
-//			while((s = buffer.readLine())!=null){
-//				wcMR.addKeyValue(0 , s);
-//			}
-//			buffer.close();
-//		}catch(Exception e){
-//			System.err.println("文件读取失败");
-//			e.printStackTrace();
-//		}
 
 		LineIterator it = FileUtils.lineIterator(new File(filename), "UTF-8");
 		try {

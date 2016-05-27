@@ -21,9 +21,9 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValue, IntermediateKey extends Comparable<IntermediateKey>, IntermediateValue> {
     List<KeyValue<InputMapKey, InputMapValue>> initialKeyValue;
-    LinkedBlockingQueue<KeyValue<IntermediateKey, IntermediateValue>> mappedKeyValue;
+    List<KeyValue<IntermediateKey, IntermediateValue>> mappedKeyValue;
     List<GroupedKeyValue<IntermediateKey, IntermediateValue>> gKVList;
-    List<KeyValue<IntermediateKey, IntermediateValue>> list = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
+    List<KeyValue<IntermediateKey, IntermediateValue>> list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
 //    Queue<List<KeyValue<InputMapKey, InputMapValue>>> initialKeyValue_queue = new LinkedList<List<KeyValue<InputMapKey, InputMapValue>>>();
     int spillfileCount = 0;
     int spillCount = 0;
@@ -33,10 +33,12 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
     InputData() {
         this.initialKeyValue = new ArrayList<KeyValue<InputMapKey, InputMapValue>>();
-        this.mappedKeyValue = new LinkedBlockingQueue<KeyValue<IntermediateKey, IntermediateValue>>(5000000);
+        this.mappedKeyValue = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
         this.gKVList = new ArrayList<GroupedKeyValue<IntermediateKey, IntermediateValue>>();
     }
-
+    public List<KeyValue<IntermediateKey, IntermediateValue>> instanceMapedKeyValue(){
+        return new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
+    }
     void putKeyValue(InputMapKey key, InputMapValue value) {
         if(initialKeyValue==null){
             initialKeyValue = new ArrayList<KeyValue<InputMapKey, InputMapValue>>();
@@ -89,12 +91,7 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
     void setMap(IntermediateKey k, IntermediateValue v) {
 
-//        logger.debug(setcount++);
-        try {
-            this.mappedKeyValue.put(new KeyValue<IntermediateKey, IntermediateValue>(k, v));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+            this.mappedKeyValue.add(new KeyValue<IntermediateKey, IntermediateValue>(k, v));
     }
 //
 //    public void serializeMapOutData() {
@@ -193,33 +190,33 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     }
 
 
-    public void spillWrite() {
-        while(true){
-            try {
-                if(list == null){
-                    list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
-                }
-//                logger.debug(list.size());
-//                list.add(mappedKeyValue.take());
-                writeKeyValue(mappedKeyValue.take());
-                if(spillCount>2000000) {
-                    logger.debug("spillcount++");
-                    spillfileCount++;
-                    spillCount=0;
-                }
-            } catch (InterruptedException e) {
-                break;
-            }
-        }
-    }
-    public void writeKeyValue(KeyValue<IntermediateKey, IntermediateValue> keyValue){
-        spillCount++;
-        File srcFile = new File("MapOutData_"+spillfileCount+".txt");
-        try {
-            FileUtils.writeStringToFile(srcFile,keyValue.getKey().toString()+","+keyValue.getValue().toString()+"\n","utf-8",true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
+//    public void spillWrite() {
+//        while(true){
+//            try {
+//                if(list == null){
+//                    list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
+//                }
+////                logger.debug(list.size());
+////                list.add(mappedKeyValue.take());
+////                writeKeyValue();
+//                if(spillCount>2000000) {
+//                    logger.debug("spillcount++");
+//                    spillfileCount++;
+//                    spillCount=0;
+//                }
+//            } catch (InterruptedException e) {
+//                break;
+//            }
+//        }
+//    }
+//    public void writeKeyValue(KeyValue<IntermediateKey, IntermediateValue> keyValue){
+//        spillCount++;
+//        File srcFile = new File("MapOutData_"+spillfileCount+".txt");
+//        try {
+//            FileUtils.writeStringToFile(srcFile,keyValue.getKey().toString()+","+keyValue.getValue().toString()+"\n","utf-8",true);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
 }
