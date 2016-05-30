@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="akka-actor_2.10-2.3.15">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/libs/akka-actor_2.10-2.3.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libs/protobuf-java-2.5.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libs/config-1.2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libs/scala-library-2.10.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

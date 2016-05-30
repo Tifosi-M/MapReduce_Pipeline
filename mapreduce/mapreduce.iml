@@ -9,5 +9,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="log4j-api-2.5" level="project" />
     <orderEntry type="library" name="commons-io-2.5" level="project" />
+    <orderEntry type="library" name="akka-actor_2.10-2.3.15" level="project" />
   </component>
 </module>
