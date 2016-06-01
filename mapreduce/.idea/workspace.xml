@@ -104,7 +104,7 @@
         <entry file="file://$PROJECT_DIR$/src/com/mapreduce/ReadFileActor.java">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="39" column="75" selection-start-line="39" selection-start-column="75" selection-end-line="39" selection-end-column="75" />
+              <caret line="48" column="46" selection-start-line="48" selection-start-column="46" selection-end-line="48" selection-end-column="46" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#919#946#0" expanded="true" />
@@ -116,8 +116,8 @@
       <file leaf-file-name="ReduceActor.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/com/mapreduce/ReduceActor.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.56626505">
-              <caret line="34" column="12" selection-start-line="34" selection-start-column="12" selection-end-line="34" selection-end-column="12" />
+            <state vertical-scroll-proportion="0.6385542">
+              <caret line="36" column="37" selection-start-line="36" selection-start-column="37" selection-end-line="36" selection-end-column="37" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#541#558#0" expanded="true" />
@@ -184,12 +184,12 @@
         <option value="$PROJECT_DIR$/src/com/mapreduce/Reducer.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/GroupActor.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/MapReduce.java" />
-        <option value="$PROJECT_DIR$/src/com/mapreduce/ReduceActor.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/SpillMergeActor.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/OutputData.java" />
         <option value="$PROJECT_DIR$/src/WordCount/Main.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/ReadFileActor.java" />
         <option value="$PROJECT_DIR$/src/com/mapreduce/SpillActor.java" />
+        <option value="$PROJECT_DIR$/src/com/mapreduce/ReduceActor.java" />
       </list>
     </option>
   </component>
@@ -699,12 +699,12 @@
       <workItem from="1464758951186" duration="52000" />
       <workItem from="1464759125417" duration="222000" />
       <workItem from="1464759350835" duration="4695000" />
-      <workItem from="1464765830632" duration="521000" />
+      <workItem from="1464765830632" duration="959000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="128338000" />
+    <option name="totallyTimeSpent" value="128776000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -1174,17 +1174,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/mapreduce/ReadFileActor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="39" column="75" selection-start-line="39" selection-start-column="75" selection-end-line="39" selection-end-column="75" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#919#946#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/mapreduce/SpillActor.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1195,10 +1184,21 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/mapreduce/ReadFileActor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="48" column="46" selection-start-line="48" selection-start-column="46" selection-end-line="48" selection-end-column="46" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#919#946#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/mapreduce/ReduceActor.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.56626505">
-          <caret line="34" column="12" selection-start-line="34" selection-start-column="12" selection-end-line="34" selection-end-column="12" />
+        <state vertical-scroll-proportion="0.6385542">
+          <caret line="36" column="37" selection-start-line="36" selection-start-column="37" selection-end-line="36" selection-end-column="37" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#541#558#0" expanded="true" />
