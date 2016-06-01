@@ -34,7 +34,7 @@ public class ReduceActor extends UntypedActor {
                 reducer.reduce();
                 outputData.setKeyValue((String)reducer.getKey(), (Integer)reducer.getValue());
             }
-            System.out.println();
+            outputData.writeToFile();
         }
     }
 }
