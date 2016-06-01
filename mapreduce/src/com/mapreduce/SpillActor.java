@@ -1,5 +1,7 @@
 package com.mapreduce;
 
+import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -17,7 +19,12 @@ public class SpillActor extends UntypedActor {
     private List<KeyValue<String, Integer>> mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
     private int count = 0;
     private static Logger loger = LogManager.getLogger(SpillActor.class.getName());
+    private ActorRef spillMergeActoy;
 
+    @Override
+    public void preStart() throws Exception {
+        spillMergeActoy = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
+    }
 
     @Override
     public void onReceive(Object message) throws Exception {
@@ -30,16 +37,24 @@ public class SpillActor extends UntypedActor {
                 loger.debug("排序中");
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
-                File srcFile = new File("MapOutData_" + count + ".txt");
+                File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/" + count + ".txt");
                 try {
                     for (int i = 0; i < mappedKeyValue.size(); i++) {
-                        FileUtils.writeStringToFile(srcFile, mappedKeyValue.remove(0).getKey().toString() + " " + mappedKeyValue.remove(0).getValue().toString() + "\n", "utf-8", true);
+                        KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
+                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
-                loger.debug("单次写入结束" + (count++));
+                loger.debug("单次写入结束" + count);
+                count++;
+            }
+            if (count == 2) {
+                spillMergeActoy.tell("StartMerge", getSelf());
+            }
+            if (count > 2) {
+                spillMergeActoy.tell("Merge", getSelf());
             }
 
         }
@@ -48,19 +63,31 @@ public class SpillActor extends UntypedActor {
                 loger.debug("排序中");
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
-                File srcFile = new File("MapOutData_" + count + ".txt");
+                File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/" + count + ".txt");
+
                 try {
                     for (int i = 0; i < mappedKeyValue.size(); i++) {
-                        FileUtils.writeStringToFile(srcFile, mappedKeyValue.remove(0).getKey().toString() + " " + mappedKeyValue.remove(0).getValue().toString() + "\n", "utf-8", true);
+                        KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
+                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
-                loger.debug("单次写入结束" + (count++));
+                loger.debug("单次写入结束" + count);
+                count++;
+                if (count == 2) {
+                    spillMergeActoy.tell("StartMerge", getSelf());
+                }
+                if (count > 2) {
+                    spillMergeActoy.tell("Merge", getSelf());
+                }
+                spillMergeActoy.tell("END",getSelf());
             }
             loger.debug("全部处理完成");
         }
-//        System.gc();
+
     }
+//        System.gc();
+
 }

@@ -126,6 +126,8 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
             MapWork(mappers, maptasks, executor);
         }
+
+
 //            inputData.initialKeyValue.clear();
 //        }
         //inputData.serializeMapOutData();
@@ -134,6 +136,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         //完成Map阶段所有计算释放map阶段中initialKeyValue键值对的存储空间
         this.inputData.initialRelease();
         executor.shutdown();
+
         logger.debug("Map阶段结束");
 
     }
@@ -154,7 +157,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 List<IntermediateKey> resultMapKeys = maptasks.get(i).get().getKeys();
                 List<IntermediateValue> resultMapValues = maptasks.get(i).get().getValues();
                 for (int j = 0; j < resultMapKeys.size(); j++) {
-                    if (this.inputData.getMappedKeyValueSize() > 10000000 * 0.8) {
+                    if (this.inputData.getMappedKeyValueSize() > 5000000) {
                         SpillThread thread = new SpillThread();
                         thread.setSpill_list(inputData.mappedKeyValue);
                         thread.setCount(++spillfileCount);
@@ -194,6 +197,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 2.合并
      */
     public void startShuffle() {
+        spillReamin();
         for(SpillThread thread:list_thread){
             try {
                 thread.join();
@@ -202,7 +206,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
         }
         logger.debug("排序阶段开始");
-//        this.spillMerge();
+        this.spillMerge();
         logger.debug("排序阶段结束");
         logger.debug("Grouping 开始");
         this.grouping();
@@ -370,10 +374,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             logger.debug("缓存溢写线程启动" + count);
             Collections.sort(spill_list);
             logger.debug("缓存溢写排序介绍"+count+".."+spill_list.size());
-            File srcFile = new File("MapOutData_" + count + ".txt");
+            File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/"+count + ".txt");
             try {
                 for (int i = 0; i < spill_list.size(); i++) {
-                    FileUtils.writeStringToFile(srcFile, spill_list.remove(0).getKey().toString() + " " + spill_list.remove(0).getValue().toString() + "\n", "utf-8", true);
+                    KeyValue<IntermediateKey,IntermediateValue> keyValue = spill_list.remove(0);
+                    FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -382,73 +387,25 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             logger.debug("缓存溢写线程结束");
         }
     }
+    public void spillReamin(){
+        SpillThread thread = new SpillThread();
+        thread.setSpill_list(inputData.mappedKeyValue);
+        thread.setCount(++spillfileCount);
+        list_thread.add(thread);
+        thread.start();
+    }
 
     public void spillMerge() {
-        LineIterator it1 = null;
-        LineIterator it2 = null;
-        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_1 = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
-        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_2 = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
-        LinkedList<KeyValue<IntermediateKey, IntermediateValue>> list_out = new LinkedList<KeyValue<IntermediateKey, IntermediateValue>>();
-        try {
-            it1 = FileUtils.lineIterator(new File("MapOutData_1.txt"), "UTF-8");
-            it2 = FileUtils.lineIterator(new File("MapOutData_2.txt"), "UTF-8");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            while (it1.hasNext()) {
-                String line = it1.nextLine();
-                String[] str = line.split(" ");
-                IntermediateKey key = (IntermediateKey) str[0];
-                IntermediateValue value = (IntermediateValue) str[1];
-                list_1.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+        File[] files = getFiles("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out");
+        for (File file :files){
+            if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
+                mergeFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt",file.toString());
             }
-        } finally {
-            LineIterator.closeQuietly(it1);
-        }
-        try {
-            while (it2.hasNext()) {
-                String line = it2.nextLine();
-                String[] str = line.split(" ");
-                IntermediateKey key = (IntermediateKey) str[0];
-                IntermediateValue value = (IntermediateValue) str[1];
-                list_2.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
-            }
-        } finally {
-            LineIterator.closeQuietly(it2);
-        }
-        while (list_1.size() != 0 || list_2.size() != 0) {
-            if (list_1.size() != 0 && list_2.size() != 0) {
-                KeyValue<IntermediateKey, IntermediateValue> keyValue1 = list_1.get(0);
-                KeyValue<IntermediateKey, IntermediateValue> keyValue2 = list_2.get(0);
-                if (keyValue1.compareTo(keyValue2) < 0) {
-                    list_out.add(keyValue1);
-                    list_1.remove(0);
-                } else {
-                    list_out.add(keyValue2);
-                    list_2.remove(0);
-                }
-            }else{
-                if(list_1.size()==0){
-                    list_out.add(list_2.remove(0));
-                }else{
-                    list_out.add(list_1.remove(0));
-                }
-            }
-        }
-
-        try {
-            for (int i = 0; i < list_out.size(); i++) {
-                FileUtils.writeStringToFile(new File("MapOutData_out.txt"), list_out.remove(0).getKey().toString() + " " + list_out.remove(0).getValue().toString() + "\n", "utf-8", true);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         logger.debug("merge结束");
     }
     public void grouping() {
-        File srcFile = new File("MapOutData_out.txt");
+        File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
         LineIterator it = null;
         try {
             it = FileUtils.lineIterator(srcFile, "UTF-8");
@@ -470,6 +427,82 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             LineIterator.closeQuietly(it);
         }
         inputData.grouping();
+    }
+    public void mergeFile(String filename1,String filename2){
+        LineIterator it1 = null;
+        LineIterator it2 = null;
+        LinkedList<KeyValue<String,Integer>> list_1 = new LinkedList<KeyValue<String,Integer>>();
+        LinkedList<KeyValue<String,Integer>> list_2 = new LinkedList<KeyValue<String,Integer>>();
+        LinkedList<KeyValue<String,Integer>> list_out = new LinkedList<KeyValue<String,Integer>>();
+        File file1 = new File(filename1);
+        File file2 = new File(filename2);
+        try {
+            it1 = FileUtils.lineIterator(file1, "UTF-8");
+            it2 = FileUtils.lineIterator(file2, "UTF-8");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            while (it1.hasNext()) {
+                String line = it1.nextLine();
+                String[] str = line.split(" ");
+                String key = (String) str[0];
+                Integer value = Integer.parseInt(str[1]);
+                list_1.add(new KeyValue<String, Integer>(key, value));
+            }
+        } finally {
+            LineIterator.closeQuietly(it1);
+        }
+        try {
+            while (it2.hasNext()) {
+                String line = it2.nextLine();
+                String[] str = line.split(" ");
+                String key = (String) str[0];
+                Integer value = Integer.parseInt(str[1]);
+                list_2.add(new KeyValue<String, Integer>(key, value));
+            }
+        } finally {
+            LineIterator.closeQuietly(it2);
+        }
+        while (list_1.size() != 0 || list_2.size() != 0) {
+            if (list_1.size() != 0 && list_2.size() != 0) {
+                KeyValue<String, Integer> keyValue1 = list_1.get(0);
+                KeyValue<String, Integer> keyValue2 = list_2.get(0);
+                if (keyValue1.compareTo(keyValue2) < 0) {
+                    list_out.add(keyValue1);
+                    list_1.remove(0);
+                } else {
+                    list_out.add(keyValue2);
+                    list_2.remove(0);
+                }
+            }else{
+                if(list_1.size()==0){
+                    list_out.add(list_2.remove(0));
+                }else{
+                    list_out.add(list_1.remove(0));
+                }
+            }
+        }
+        if(file1.getName().equals("0.txt"))
+            file1.delete();
+        file2.delete();
+
+        try {
+            File file = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
+            for (int i = 0; i < list_out.size(); i++) {
+                KeyValue<String, Integer> keyValue = list_out.remove(0);
+                FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        logger.debug("merge结束");
+    }
+    public File[] getFiles(String path){
+        File file = new File(path);
+        File[] fileList = file.listFiles();
+        return fileList;
     }
 
 
