@@ -33,7 +33,7 @@ public class SpillActor extends UntypedActor {
             for (KeyValue<String, Integer> item : (List<KeyValue<String, Integer>>) message) {
                 mappedKeyValue.add(item);
             }
-            if (mappedKeyValue.size() > 5000000) {
+            if (mappedKeyValue.size() > 500000) {
                 loger.debug("排序中");
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);

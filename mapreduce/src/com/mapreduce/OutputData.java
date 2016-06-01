@@ -35,7 +35,7 @@ public class OutputData<K, V> {
 	//运行完成，写出结果到文本文件
 	public void writeToFile() {
 		logger.debug("结果写入文件");
-		File file=new File("result.txt");
+		File file=new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/result.txt");
 		if(!file.exists())
 			try {
 				file.createNewFile();

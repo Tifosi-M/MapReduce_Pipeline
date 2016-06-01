@@ -17,8 +17,8 @@ public class Main {
 		wcMR.setParallelThreadNum(4);
 
 		try {
-			readFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/2.txt");
-			readFile("2.txt");
+			readFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/1.txt");
+//			readFile("2.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

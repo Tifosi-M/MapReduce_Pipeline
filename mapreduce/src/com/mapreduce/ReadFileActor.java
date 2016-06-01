@@ -29,7 +29,7 @@ public class ReadFileActor extends UntypedActor{
         if(message.equals("start")){
             int count=0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-            LineIterator it = FileUtils.lineIterator(new File("test.txt"), "UTF-8");
+            LineIterator it = FileUtils.lineIterator(new File("1.txt"), "UTF-8");
             try {
                 while (it.hasNext()) {
                     String line = it.nextLine();
