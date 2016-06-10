@@ -35,7 +35,7 @@ public class SpillActor extends UntypedActor {
             for (KeyValue<String, Integer> item : (List<KeyValue<String, Integer>>) message) {
                 mappedKeyValue.add(item);
             }
-            if (mappedKeyValue.size() > 1000000) {
+            if (mappedKeyValue.size() > 2500000) {
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
                 File srcFile = new File("/root/spill_out/" + count + ".txt");
@@ -83,9 +83,10 @@ public class SpillActor extends UntypedActor {
 //                    spillMergeActor.tell("Merge", getSelf());
 //                }
                 spillMergeActor.tell("StartMerge",getSelf());
+                loger.info("溢写完成");
                 context().stop(getSelf());
             }
-            loger.info("溢写完成");
+
         }
 
     }

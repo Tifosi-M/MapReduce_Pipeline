@@ -32,7 +32,7 @@ public class ReadFileActor extends UntypedActor{
         if(message.equals("start")){
 
             int count=0;
-            List<KeyValue<Integer, String>> initialKeyValue = new LinkedList<KeyValue<Integer, String>>();
+            List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
             LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");
             logger.debug("开始读取文件==========================");
             try {
@@ -42,7 +42,7 @@ public class ReadFileActor extends UntypedActor{
                     if (count == 800) {
                         //发送消息给MapActoy
                         mapActor.tell(initialKeyValue,getSelf());
-                        initialKeyValue = new LinkedList<KeyValue<Integer, String>>();
+                        initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
                         count = 0;
                     }
                     count++;

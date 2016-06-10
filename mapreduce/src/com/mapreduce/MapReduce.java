@@ -157,7 +157,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 List<IntermediateKey> resultMapKeys = maptasks.get(i).get().getKeys();
                 List<IntermediateValue> resultMapValues = maptasks.get(i).get().getValues();
                 for (int j = 0; j < resultMapKeys.size(); j++) {
-                    if (this.inputData.getMappedKeyValueSize() > 2000000) {
+                    if (this.inputData.getMappedKeyValueSize() > 2500000) {
                         SpillThread thread = new SpillThread();
                         thread.setSpill_list(inputData.mappedKeyValue);
                         thread.setCount(++spillfileCount);
@@ -373,7 +373,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         public void run() {
             logger.debug("缓存溢写线程启动" + count);
             Collections.sort(spill_list);
-            logger.debug("缓存溢写排序介绍"+count+".."+spill_list.size());
+            logger.debug("缓存溢写排序结束"+count+".."+spill_list.size());
             File srcFile = new File("/root/spill_out/"+count + ".txt");
             try {
                 for (int i = 0; i < spill_list.size(); i++) {
