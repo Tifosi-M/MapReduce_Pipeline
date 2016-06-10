@@ -1,6 +1,7 @@
 package com.mapreduce;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
@@ -19,11 +20,12 @@ public class SpillActor extends UntypedActor {
     private List<KeyValue<String, Integer>> mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
     private int count = 0;
     private static Logger loger = LogManager.getLogger(SpillActor.class.getName());
-    private ActorRef spillMergeActoy;
+    private ActorSelection spillMergeActor;
 
     @Override
     public void preStart() throws Exception {
-        spillMergeActoy = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
+//        spillMergeActoy = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
+        spillMergeActor = getContext().actorSelection("../SpillMergeActor");
     }
 
     @Override
@@ -33,11 +35,10 @@ public class SpillActor extends UntypedActor {
             for (KeyValue<String, Integer> item : (List<KeyValue<String, Integer>>) message) {
                 mappedKeyValue.add(item);
             }
-            if (mappedKeyValue.size() > 500000) {
-                loger.debug("排序中");
+            if (mappedKeyValue.size() > 1000000) {
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
-                File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/" + count + ".txt");
+                File srcFile = new File("/root/spill_out/" + count + ".txt");
                 try {
                     for (int i = 0; i < mappedKeyValue.size(); i++) {
                         KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
@@ -47,23 +48,22 @@ public class SpillActor extends UntypedActor {
                     e.printStackTrace();
                 }
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
-                loger.debug("单次写入结束" + count);
+                loger.debug("文件" + count+"写入结束");
                 count++;
             }
-            if (count == 2) {
-                spillMergeActoy.tell("StartMerge", getSelf());
-            }
-            if (count > 2) {
-                spillMergeActoy.tell("Merge", getSelf());
-            }
+//            if (count == 2) {
+//                spillMergeActor.tell("StartMerge", getSelf());
+//            }
+//            if (count > 2) {
+//                spillMergeActor.tell("Merge", getSelf());
+//            }
 
         }
         if (message instanceof String) {
             if ("END".equals((String) message)) {
-                loger.debug("排序中");
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
-                File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/" + count + ".txt");
+                File srcFile = new File("/root/spill_out/" + count + ".txt");
 
                 try {
                     for (int i = 0; i < mappedKeyValue.size(); i++) {
@@ -74,20 +74,20 @@ public class SpillActor extends UntypedActor {
                     e.printStackTrace();
                 }
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
-                loger.debug("单次写入结束" + count);
+                loger.debug("文件" + count+"写入结束");
                 count++;
-                if (count == 2) {
-                    spillMergeActoy.tell("StartMerge", getSelf());
-                }
-                if (count > 2) {
-                    spillMergeActoy.tell("Merge", getSelf());
-                }
-                spillMergeActoy.tell("END",getSelf());
+//                if (count == 2) {
+//                    spillMergeActor.tell("StartMerge", getSelf());
+//                }
+//                if (count > 2) {
+//                    spillMergeActor.tell("Merge", getSelf());
+//                }
+                spillMergeActor.tell("StartMerge",getSelf());
+                context().stop(getSelf());
             }
-            loger.debug("全部处理完成");
+            loger.info("溢写完成");
         }
 
     }
-//        System.gc();
 
 }

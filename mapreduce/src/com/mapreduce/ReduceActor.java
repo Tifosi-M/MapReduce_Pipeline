@@ -1,6 +1,8 @@
 package com.mapreduce;
 
 import WordCount.ReduceWC;
+import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +17,7 @@ public class ReduceActor extends UntypedActor {
     private Class<? extends Reducer<String, Integer, String, Integer>> reduceClass;
     private static Logger logger = LogManager.getLogger(ReduceActor.class.getName());
     private OutputData<String, Integer> outputData =new OutputData<String, Integer>();
+    private ActorSelection selection = getContext().actorSelection("../UserActor");
     Reducer<String, Integer, String, Integer> initializeReducer() {
         try {
             return ReduceWC.class.newInstance();
@@ -27,6 +30,7 @@ public class ReduceActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if(message instanceof List){
+            logger.info("开始Reducer");
             List<GroupedKeyValue<String, Integer>> gKVList = (ArrayList<GroupedKeyValue<String, Integer>>)message;
             Reducer reducer = initializeReducer();
             for(int i =0;i<gKVList.size();i++){
@@ -34,6 +38,7 @@ public class ReduceActor extends UntypedActor {
                 reducer.reduce();
                 outputData.setKeyValue((String)reducer.getKey(), (Integer)reducer.getValue());
             }
+            logger.info("Reduce阶段结束========================");
             outputData.writeToFile();
         }
     }

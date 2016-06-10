@@ -14,11 +14,10 @@ public class Main {
 	private static Logger logger = LogManager.getLogger(Main.class.getName());
 
 	public void init(){
-		wcMR.setParallelThreadNum(4);
+		wcMR.setParallelThreadNum(1);
 
 		try {
-			readFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/1.txt");
-//			readFile("2.txt");
+			readFile("/root/input.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -31,8 +30,7 @@ public class Main {
 	}
 	public void readFile(String filename) throws IOException {
 		int count=0;
-		logger.debug("开始读取文件");
-
+		logger.info("开始读取文件==================");
 		LineIterator it = FileUtils.lineIterator(new File(filename), "UTF-8");
 		try {
 			while (it.hasNext()) {
@@ -47,6 +45,7 @@ public class Main {
 		} finally {
 			LineIterator.closeQuietly(it);
 		}
+		logger.info("文件全部读取完成");
 		wcMR.startMap();
 
 	}

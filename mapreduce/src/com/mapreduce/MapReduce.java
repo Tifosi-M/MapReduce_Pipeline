@@ -85,7 +85,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 4.1.-3.重复运行
      */
     public void startMap() {
-        logger.debug("Map阶段启动");
+        logger.info("Map阶段启动");
         List<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>> mappers = new ArrayList<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(this.parallelThreadNum);
         List<FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>> maptasks = new ArrayList<FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>>(this.parallelThreadNum);
         ExecutorService executor = Executors.newFixedThreadPool(this.parallelThreadNum);
@@ -157,7 +157,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 List<IntermediateKey> resultMapKeys = maptasks.get(i).get().getKeys();
                 List<IntermediateValue> resultMapValues = maptasks.get(i).get().getValues();
                 for (int j = 0; j < resultMapKeys.size(); j++) {
-                    if (this.inputData.getMappedKeyValueSize() > 5000000) {
+                    if (this.inputData.getMappedKeyValueSize() > 2000000) {
                         SpillThread thread = new SpillThread();
                         thread.setSpill_list(inputData.mappedKeyValue);
                         thread.setCount(++spillfileCount);
@@ -205,9 +205,9 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
         }
-        logger.debug("排序阶段开始");
+        logger.info("溢写合并开始");
         this.spillMerge();
-        logger.debug("排序阶段结束");
+        logger.debug("溢写合并结束");
         logger.debug("Grouping 开始");
         this.grouping();
         logger.debug("Grouping 结束");
@@ -223,7 +223,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 4.1.-3.重复运行
      */
     public void startReduce() {
-        logger.debug("Reduce阶段开始");
+        logger.info("Reduce阶段开始");
         List<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>> reducers = new ArrayList<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>(this.parallelThreadNum);
         List<FutureTask<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>> reducetasks = new ArrayList<FutureTask<Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>>>(this.parallelThreadNum);
         ExecutorService executor = Executors.newFixedThreadPool(this.parallelThreadNum);
@@ -259,7 +259,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         reducers = null;
         reducetasks = null;
         executor.shutdown();
-        logger.debug("Reduce阶段结束");
+        logger.info("Reduce阶段结束====================");
     }
 
     /**
@@ -374,7 +374,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             logger.debug("缓存溢写线程启动" + count);
             Collections.sort(spill_list);
             logger.debug("缓存溢写排序介绍"+count+".."+spill_list.size());
-            File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/"+count + ".txt");
+            File srcFile = new File("/root/spill_out/"+count + ".txt");
             try {
                 for (int i = 0; i < spill_list.size(); i++) {
                     KeyValue<IntermediateKey,IntermediateValue> keyValue = spill_list.remove(0);
@@ -384,7 +384,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
             spill_list = null;
-            logger.debug("缓存溢写线程结束");
+            logger.info("缓存溢写线程结束");
         }
     }
     public void spillReamin(){
@@ -396,16 +396,16 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     }
 
     public void spillMerge() {
-        File[] files = getFiles("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out");
+        File[] files = getFiles("/root/spill_out");
         for (File file :files){
             if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
-                mergeFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt",file.toString());
+                mergeFile("/root/spill_out/out.txt",file.toString());
             }
         }
-        logger.debug("merge结束");
+        logger.debug("溢写合并结束");
     }
     public void grouping() {
-        File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
+        File srcFile = new File("/root/spill_out/out.txt");
         LineIterator it = null;
         try {
             it = FileUtils.lineIterator(srcFile, "UTF-8");
@@ -489,7 +489,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         file2.delete();
 
         try {
-            File file = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
+            File file = new File("/root/spill_out/out.txt");
             for (int i = 0; i < list_out.size(); i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
@@ -497,7 +497,6 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         } catch (Exception e) {
             e.printStackTrace();
         }
-        logger.debug("merge结束");
     }
     public File[] getFiles(String path){
         File file = new File(path);

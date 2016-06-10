@@ -34,7 +34,6 @@ public abstract class Mapper <InputKey, InputValue, OutputKey, OutputValue> {
 		this.okeys = new ArrayList<OutputKey>();
 		this.ovalues = new ArrayList<OutputValue>();
 	}
-	
 
 	void setKeyValue(InputKey key, InputValue value){
 		this.ikey = key;

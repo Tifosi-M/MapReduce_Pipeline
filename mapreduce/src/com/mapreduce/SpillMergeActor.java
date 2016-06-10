@@ -1,6 +1,7 @@
 package com.mapreduce;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
@@ -17,11 +18,12 @@ import java.util.LinkedList;
  */
 public class SpillMergeActor extends UntypedActor {
     private static Logger loger = LogManager.getLogger(SpillMergeActor.class.getName());
-    private ActorRef groupActor;
+    private ActorSelection groupActor;
 
     @Override
     public void preStart() throws Exception {
-        groupActor = getContext().actorOf(Props.create(GroupActor.class),"GroupActor");
+//        groupActor = getContext().actorOf(Props.create(GroupActor.class),"GroupActor");
+        groupActor = getContext().actorSelection("../GroupActor");
     }
 
     public void mergeFile(String filename1,String filename2){
@@ -85,7 +87,7 @@ public class SpillMergeActor extends UntypedActor {
         file2.delete();
 
         try {
-            File file = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
+            File file = new File("/root/spill_out/out.txt");
             for (int i = 0; i < list_out.size(); i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
@@ -93,7 +95,6 @@ public class SpillMergeActor extends UntypedActor {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        loger.debug("merge结束");
     }
     public File[] getFiles(String path){
         File file = new File(path);
@@ -103,20 +104,26 @@ public class SpillMergeActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if(message instanceof String){
+            loger.info("开始进行溢写合并");
+//            if("StartMerge".equals((String)message)){
+//                mergeFile("/root/spill_out/0.txt","/root/spill_out/1.txt");
+//            }
             if("StartMerge".equals((String)message)){
-                mergeFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/0.txt","/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/1.txt");
-            }
-            if("Merge".equals((String)message)){
-                File[] files = getFiles("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out");
+                File[] files = getFiles("/root/spill_out");
                 for (File file :files){
-                    if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")&&Integer.parseInt(file.getName().split("\\.")[0])>0){
-                        mergeFile("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt",file.toString());
+                    if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
+                        mergeFile("/root/spill_out/out.txt",file.toString());
                     }
                 }
-            }
-            if("END".equals((String)message)){
                 groupActor.tell("StartGrouping",getSelf());
+                loger.info("溢写合并完成");
+                context().stop(getSelf());
             }
+//            if("END".equals((String)message)){
+//                groupActor.tell("StartGrouping",getSelf());
+//                loger.info("溢写合并完成");
+//                context().stop(getSelf());
+//            }
         }
     }
 }

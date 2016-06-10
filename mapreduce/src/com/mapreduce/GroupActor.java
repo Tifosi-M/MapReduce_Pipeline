@@ -1,10 +1,13 @@
 package com.mapreduce;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,18 +20,21 @@ import java.util.List;
 public class GroupActor extends UntypedActor {
     private List<KeyValue<String, Integer>> list = new ArrayList<KeyValue<String, Integer>>();
     private List<GroupedKeyValue<String, Integer>> gKVList = new ArrayList<GroupedKeyValue<String, Integer>>();
-    private ActorRef reduceActory;
+    private ActorSelection reduceActor;
+    private static Logger logger = LogManager.getLogger(GroupActor.class.getName());
 
     @Override
     public void preStart() throws Exception {
-        reduceActory = getContext().actorOf(Props.create(ReduceActor.class),"ReduceActor");
+//        reduceActory = getContext().actorOf(Props.create(ReduceActor.class),"ReduceActor");
+        reduceActor = getContext().actorSelection("../ReduceActor");
     }
 
     @Override
     public void onReceive(Object message) throws Exception {
         if(message instanceof String) {
             if ("StartGrouping".equals((String)message)) {
-                File srcFile = new File("/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/spill_out/out.txt");
+                logger.info("Grouping阶段开始");
+                File srcFile = new File("/root/spill_out/out.txt");
                 LineIterator it = null;
                 try {
                     it = FileUtils.lineIterator(srcFile, "UTF-8");
@@ -66,7 +72,9 @@ public class GroupActor extends UntypedActor {
                     }
                 }
                 gKVList.add(gkv);
-                reduceActory.tell(gKVList,getSelf());
+                logger.info("Grouping 阶段结束");
+                reduceActor.tell(gKVList,getSelf());
+                context().stop(getSelf());
             }
         }
     }

@@ -11,7 +11,7 @@ import com.mapreduce.UserActor;
 public class ActorMain {
     public static void main(String[] args){
         ActorSystem system = ActorSystem.create("actor-mapreduce-java");
-        ActorRef userActor = system.actorOf(Props.create(UserActor.class));
+        ActorRef userActor = system.actorOf(Props.create(UserActor.class),"UserActor");
         userActor.tell("start",ActorRef.noSender());
     }
 }

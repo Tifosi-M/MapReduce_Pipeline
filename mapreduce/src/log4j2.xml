@@ -6,7 +6,7 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
         </Console>
         <File name="FILE"
-              fileName="/Users/szp/Documents/github/MapReduce_Pipeline/mapreduce/debug.log"
+              fileName="/root/debug.log"
               bufferedIO="false"
               advertise="true">
             <PatternLayout pattern="%d %p %C{1.} [%t] %m%n"/>

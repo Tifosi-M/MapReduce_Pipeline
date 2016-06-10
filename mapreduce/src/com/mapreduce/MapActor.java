@@ -2,6 +2,7 @@ package com.mapreduce;
 
 import WordCount.MapWC;
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.logging.log4j.LogManager;
@@ -20,12 +21,13 @@ public class MapActor extends UntypedActor {
     //    public MapActor(Class<? extends Mapper<Integer, String, String, Integer>> map_class){
 //        this.mapClass = map_class;
 //    }
-    private ActorRef spillActoy;
+    private ActorSelection spillActoy;
     private static Logger logger = LogManager.getLogger(ReadFileActor.class.getName());
 
     @Override
     public void preStart() throws Exception {
-        spillActoy = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
+//        spillActoy = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
+        spillActoy = getContext().actorSelection("../SpillActor");
     }
 
     Mapper<Integer, String, String, Integer> initializeMapper() {
@@ -53,13 +55,15 @@ public class MapActor extends UntypedActor {
             for (int j = 0; j < resultMapKeys.size(); j++) {
                 inputData.setMap(resultMapKeys.get(j), resultMapValues.get(j));
             }
-            logger.debug("mappedKeyValue数据量:"+inputData.mappedKeyValue.size());
 
             spillActoy.tell(inputData.mappedKeyValue, getSelf());
-            logger.debug("Map结束");
         }
-        if(message instanceof String){
-            spillActoy.tell(message,getSelf());
+        if (message instanceof String) {
+            if ("END".equals(message)) {
+                spillActoy.tell(message, getSelf());
+                logger.info("Mapper阶段结束");
+                context().stop(getSelf());
+            }
         }
     }
 }
