@@ -30,7 +30,6 @@ public class SpillActor extends UntypedActor {
 
     @Override
     public void onReceive(Object message) throws Exception {
-//        loger.debug("写入次数第"+count+"次");
         if (message instanceof List) {
             for (KeyValue<String, Integer> item : (List<KeyValue<String, Integer>>) message) {
                 mappedKeyValue.add(item);

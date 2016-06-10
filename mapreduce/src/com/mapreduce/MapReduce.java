@@ -206,11 +206,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
         }
         logger.info("溢写合并开始");
-        this.spillMerge();
-        logger.debug("溢写合并结束");
-        logger.debug("Grouping 开始");
-        this.grouping();
-        logger.debug("Grouping 结束");
+//        this.spillMerge();
+//        logger.debug("溢写合并结束");
+//        logger.debug("Grouping 开始");
+//        this.grouping();
+//        logger.debug("Grouping 结束");
     }
 
 

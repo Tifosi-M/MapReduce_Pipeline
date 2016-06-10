@@ -24,8 +24,8 @@ public class Main {
 		logger.debug("读取文件结束");
 
 		wcMR.startShuffle();
-		wcMR.startReduce();
-		wcMR.writeToFile();
+//		wcMR.startReduce();
+//		wcMR.writeToFile();
 
 	}
 	public void readFile(String filename) throws IOException {
