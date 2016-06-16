@@ -7,7 +7,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -371,20 +375,33 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         public void setCount(int count){this.count = count;}
         @Override
         public void run() {
-            logger.debug("缓存溢写线程启动" + count);
             Collections.sort(spill_list);
-            logger.debug("缓存溢写排序结束"+count+".."+spill_list.size());
+            logger.debug("缓存溢写文件"+count+"开始");
             File srcFile = new File("/root/spill_out/"+count + ".txt");
+            RandomAccessFile raf = null;
             try {
-                for (int i = 0; i < spill_list.size(); i++) {
+                raf = new RandomAccessFile(srcFile, "rw");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            FileChannel fileChannel = raf.getChannel();
+            ByteBuffer rBuffer = ByteBuffer.allocate(32 * 1024 * 1024);
+            try {
+                int size = spill_list.size();
+                for (int i = 0; i < size; i++) {
                     KeyValue<IntermediateKey,IntermediateValue> keyValue = spill_list.remove(0);
-                    FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+//                    FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+                    rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                 }
+                rBuffer.flip();
+                fileChannel.write(rBuffer);
+                fileChannel.close();
+                raf.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             spill_list = null;
-            logger.info("缓存溢写线程结束");
+            logger.info("文件"+count+"溢写结束");
         }
     }
     public void spillReamin(){
@@ -506,4 +523,3 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
 
 }
-

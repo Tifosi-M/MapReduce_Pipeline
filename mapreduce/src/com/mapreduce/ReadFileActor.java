@@ -10,6 +10,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,7 +33,6 @@ public class ReadFileActor extends UntypedActor{
     @Override
     public void onReceive(Object message) throws Exception {
         if(message.equals("start")){
-
             int count=0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
             LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");

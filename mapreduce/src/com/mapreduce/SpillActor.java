@@ -9,6 +9,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,14 +41,23 @@ public class SpillActor extends UntypedActor {
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
                 File srcFile = new File("/root/spill_out/" + count + ".txt");
+                RandomAccessFile raf = new RandomAccessFile(srcFile, "rw");
+                FileChannel fileChannel = raf.getChannel();
+                ByteBuffer rBuffer = ByteBuffer.allocate(32 * 1024 * 1024);
                 try {
-                    for (int i = 0; i < mappedKeyValue.size(); i++) {
+                    int size = mappedKeyValue.size();
+                    for (int i = 0; i < size; i++) {
                         KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
-                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+//                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+                        rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                rBuffer.flip();
+                fileChannel.write(rBuffer);
+                fileChannel.close();
+                raf.close();
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
                 loger.debug("文件" + count+"写入结束");
                 count++;
@@ -63,15 +75,23 @@ public class SpillActor extends UntypedActor {
                 Collections.sort(mappedKeyValue);
                 loger.debug("正在写入文件" + count);
                 File srcFile = new File("/root/spill_out/" + count + ".txt");
-
+                RandomAccessFile raf = new RandomAccessFile(srcFile, "rw");
+                FileChannel fileChannel = raf.getChannel();
+                ByteBuffer rBuffer = ByteBuffer.allocate(32 * 1024 * 1024);
                 try {
-                    for (int i = 0; i < mappedKeyValue.size(); i++) {
+                    int size = mappedKeyValue.size();
+                    for (int i = 0; i < size; i++) {
                         KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
-                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+//                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+                        rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                rBuffer.flip();
+                fileChannel.write(rBuffer);
+                fileChannel.close();
+                raf.close();
                 mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
                 loger.debug("文件" + count+"写入结束");
                 count++;
