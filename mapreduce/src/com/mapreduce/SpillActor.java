@@ -73,6 +73,7 @@ public class SpillActor extends UntypedActor {
         if (message instanceof String) {
             if ("END".equals((String) message)) {
                 Collections.sort(mappedKeyValue);
+
                 loger.debug("正在写入文件" + count);
                 File srcFile = new File("/root/spill_out/" + count + ".txt");
                 RandomAccessFile raf = new RandomAccessFile(srcFile, "rw");

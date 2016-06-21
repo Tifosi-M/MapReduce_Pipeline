@@ -35,24 +35,45 @@ public class ReadFileActor extends UntypedActor{
         if(message.equals("start")){
             int count=0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-            LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");
-            logger.debug("开始读取文件==========================");
-            try {
-                while (it.hasNext()) {
-                    String line = it.nextLine();
-                    initialKeyValue.add(new KeyValue<Integer, String>(0, line));
-                    if (count == 800) {
-                        //发送消息给MapActoy
+            RandomAccessFile raf = new RandomAccessFile(new File("/root/input.txt"), "r");
+            FileChannel fc = raf.getChannel();
+            MappedByteBuffer mbb =  fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
+            StringBuffer sbf = new StringBuffer();
+            while(mbb.remaining()>0){
+                char data = (char)mbb.get();
+                if(data!='\n'){
+                    sbf.append(data);
+                }else{
+                    initialKeyValue.add(new KeyValue<Integer,String>(0,sbf.toString()));
+                    sbf.setLength(0);
+                    if(count == 800){
                         mapActor.tell(initialKeyValue,getSelf());
                         initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-                        count = 0;
+                        count=0;
                     }
                     count++;
                 }
-                mapActor.tell(initialKeyValue,getSelf());
-            } finally {
-                LineIterator.closeQuietly(it);
             }
+            mapActor.tell(initialKeyValue,getSelf());
+//            List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
+//            LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");
+//            logger.debug("开始读取文件==========================");
+//            try {
+//                while (it.hasNext()) {
+//                    String line = it.nextLine();
+//                    initialKeyValue.add(new KeyValue<Integer, String>(0, line));
+//                    if (count == 800) {
+//                        //发送消息给MapActoy
+//                        mapActor.tell(initialKeyValue,getSelf());
+//                        initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
+//                        count = 0;
+//                    }
+//                    count++;
+//                }
+//                mapActor.tell(initialKeyValue,getSelf());
+//            } finally {
+//                LineIterator.closeQuietly(it);
+//            }
             mapActor.tell("END",getSelf());
             logger.info("文件读取结束");
             context().stop(getSelf());

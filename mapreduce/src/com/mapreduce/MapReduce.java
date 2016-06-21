@@ -43,7 +43,6 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     //The Number of concurrent threads
     private int parallelThreadNum;
 
-
     public MapReduce(
             Class<? extends Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>> map_class,
             Class<? extends Reducer<IntermediateKey, IntermediateValue, OutputReduceKey, OutputReduceValue>> reduce_class,
