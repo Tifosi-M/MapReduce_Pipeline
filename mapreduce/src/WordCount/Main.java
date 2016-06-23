@@ -29,6 +29,7 @@ public class Main {
 //		wcMR.writeToFile();
 
 	}
+
 	public void readFile(String filename) throws IOException {
 		int count=0;
 		logger.info("开始读取文件==================");
