@@ -374,7 +374,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         public void setCount(int count){this.count = count;}
         @Override
         public void run() {
-            Collections.sort(spill_list);
+//            Collections.sort(spill_list);
             logger.debug("缓存溢写文件"+count+"开始");
             File srcFile = new File("/root/spill_out/"+count + ".txt");
             RandomAccessFile raf = null;
@@ -384,7 +384,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
             FileChannel fileChannel = raf.getChannel();
-            ByteBuffer rBuffer = ByteBuffer.allocate(32 * 1024 * 1024);
+            ByteBuffer rBuffer = ByteBuffer.allocateDirect(32 * 1024 * 1024);
             try {
                 int size = spill_list.size();
                 for (int i = 0; i < size; i++) {

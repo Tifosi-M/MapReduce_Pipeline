@@ -48,6 +48,7 @@ public class MapActor extends UntypedActor {
             inputData = new InputData<Integer, String, String, Integer>();
             Mapper mapper = initializeMapper();
             inputData.initialKeyValue = (ArrayList<KeyValue<Integer, String>>) message;
+            message = null;
             for (int i = 0; i < inputData.getMapSize(); i++) {
                 mapper.setKeyValue(inputData.getMapKey(i), inputData.getMapValue(i));
                 mapper.map();
@@ -57,13 +58,14 @@ public class MapActor extends UntypedActor {
             for (int j = 0; j < resultMapKeys.size(); j++) {
                 inputData.setMap(resultMapKeys.get(j), resultMapValues.get(j));
             }
+            mapper = null;
 
             spillActoy.tell(inputData.mappedKeyValue, getSelf());
         }
         if (message instanceof String) {
             if ("END".equals(message)) {
                 spillActoy.tell(message, getSelf());
-                logger.info("Mapper阶段结束");
+                logger.info("Mapper阶段结束========================================");
                 context().stop(getSelf());
             }
         }

@@ -16,7 +16,7 @@ public class Main {
 	private static Logger logger = LogManager.getLogger(Main.class.getName());
 
 	public void init(){
-		wcMR.setParallelThreadNum(1);
+		wcMR.setParallelThreadNum(8);
 
 		try {
 			readFile("/root/input.txt");
