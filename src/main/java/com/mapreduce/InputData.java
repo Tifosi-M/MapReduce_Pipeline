@@ -1,17 +1,9 @@
 package com.mapreduce;
 
-import com.sun.jmx.remote.internal.ArrayQueue;
-import jdk.nashorn.internal.runtime.arrays.ArrayLikeIterator;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @param <InputMapKey>       Map阶段输入key的类型

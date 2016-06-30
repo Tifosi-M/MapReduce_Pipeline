@@ -37,18 +37,15 @@ public class GroupedValues<V> implements Iterable<V> , Iterator<V> {
 		return v;
 	}
 
-	@Override
 	public Iterator<V> iterator() {
 		return gValues.iterator();
 	}
 
-	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		return index > 0;
 	}
 
-	@Override
 	public V next() {
 		// TODO Auto-generated method stub
 		V v = gValues.get(index);
@@ -56,7 +53,6 @@ public class GroupedValues<V> implements Iterable<V> , Iterator<V> {
 		return v;
 	}
 
-	@Override
 	public void remove() {
 		// TODO Auto-generated method stub
 		this.gValues.remove(this.index);

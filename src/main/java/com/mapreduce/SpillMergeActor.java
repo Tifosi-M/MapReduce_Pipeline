@@ -1,8 +1,6 @@
 package com.mapreduce;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;

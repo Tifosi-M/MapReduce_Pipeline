@@ -1,7 +1,6 @@
 package com.mapreduce;
 
 import WordCount.ReduceWC;
-import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import org.apache.logging.log4j.LogManager;

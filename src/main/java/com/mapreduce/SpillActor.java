@@ -1,10 +1,7 @@
 package com.mapreduce;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,7 +11,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -93,6 +89,7 @@ public class SpillActor extends UntypedActor {
         if (message instanceof String) {
             if ("END".equals((String) message)) {
                 new Thread(()->{
+                    registThread();
 //                    Collections.sort(mappedKeyValue);
                     loger.debug("正在写入文件" + count);
                     File srcFile = new File("/root/spill_out/" + count + ".txt");
@@ -131,6 +128,7 @@ public class SpillActor extends UntypedActor {
 //                if (count > 2) {
 //                    spillMergeActor.tell("Merge", getSelf());
 //                }
+                    unregistThread();
                 }).start();
                 while(thread_count!=0);
                 loger.info("溢写完成");

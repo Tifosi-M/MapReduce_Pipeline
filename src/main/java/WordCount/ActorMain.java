@@ -5,8 +5,6 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import com.mapreduce.UserActor;
 
-import java.util.ArrayList;
-
 /**
  * Created by szp on 16/5/27.
  */
@@ -15,8 +13,5 @@ public class ActorMain {
         ActorSystem system = ActorSystem.create("actor-mapreduce-java");
         ActorRef userActor = system.actorOf(Props.create(UserActor.class),"UserActor");
         userActor.tell("start",ActorRef.noSender());
-        ArrayList<String> list = new ArrayList<>();
-
-
     }
 }

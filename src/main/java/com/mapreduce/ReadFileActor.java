@@ -1,11 +1,7 @@
 package com.mapreduce;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
-import akka.actor.Props;
 import akka.actor.UntypedActor;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,7 +10,6 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
