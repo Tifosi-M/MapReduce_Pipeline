@@ -13,6 +13,5 @@ before_script:
   - sudo chmod ugo+x run-test.sh
 script:
   - mvn assembly:assembly
-  - sudo mv target/PMT-MapReduce-1.0-SNAPSHOT-jar-with-dependencies.jar /root/mapreduce.jar
-  - java -jar /root/mapreduce.jar
+  - java -jar target/PMT-MapReduce-1.0-SNAPSHOT-jar-with-dependencies.jar
   - ./run-test.sh
