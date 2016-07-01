@@ -1,6 +1,7 @@
 package com.mapreduce;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
  * Created by szp on 16/5/27.
  */
 public class UserActor extends UntypedActor {
+    private static ActorSystem system;
     ActorRef readFileActor;
     ActorRef mapActor;
     ActorRef spillActor;
@@ -36,5 +38,10 @@ public class UserActor extends UntypedActor {
             if("start".equals(message))
                 readFileActor.tell("start", getSelf());
         }
+    }
+    public static void main(String[] args){
+        system = ActorSystem.create("actor-mapreduce-java");
+        ActorRef userActor = system.actorOf(Props.create(UserActor.class),"UserActor");
+        userActor.tell("start",ActorRef.noSender());
     }
 }

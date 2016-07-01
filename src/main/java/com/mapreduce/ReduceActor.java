@@ -1,6 +1,7 @@
 package com.mapreduce;
 
 import WordCount.ReduceWC;
+import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
@@ -19,6 +20,7 @@ public class ReduceActor extends UntypedActor {
     private Class<? extends Reducer<String, Integer, String, Integer>> reduceClass;
     private static Logger logger = LogManager.getLogger(ReduceActor.class.getName());
     private OutputData<String, Integer> outputData =new OutputData<String, Integer>();
+    private ActorRef userActor = getContext().parent();
     Reducer<String, Integer, String, Integer> initializeReducer() {
         try {
             return ReduceWC.class.newInstance();
@@ -42,6 +44,7 @@ public class ReduceActor extends UntypedActor {
             logger.info("Reduce阶段结束========================");
             outputData.writeToFile();
             Files.delete(Paths.get("/root/spill_out/out.txt"));
+            System.exit(0);
         }
     }
 }
