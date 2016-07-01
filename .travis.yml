@@ -8,9 +8,9 @@ branches:
     - master
 
 before_script:
-  - mkdir /root/spill_out
-  - cp testData/input.txt /root/input.txt
-  - chmod ugo+x run-test.sh
+  - su mkdir /root/spill_out
+  - su cp testData/input.txt /root/input.txt
+  - su chmod ugo+x run-test.sh
 script:
   - mvn assembly:assembly
   - mv target/PMT-MapReduce-1.0-SNAPSHOT-jar-with-dependencies.jar /root/mapreduce.jar
