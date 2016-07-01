@@ -14,5 +14,5 @@ before_script:
 script:
   - mvn assembly:assembly
   - mv target/PMT-MapReduce-1.0-SNAPSHOT-jar-with-dependencies.jar /root/mapreduce.jar
-  - java -jar /root/mapreduce
+  - java -jar /root/mapreduce.jar
   - ./run-test.sh
