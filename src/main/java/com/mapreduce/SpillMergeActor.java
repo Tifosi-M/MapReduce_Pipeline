@@ -85,7 +85,7 @@ public class SpillMergeActor extends UntypedActor {
         file2.delete();
 
         try {
-            File file = new File("/root/spill_out/out.txt");
+            File file = new File("testData/spill_out/out.txt");
             for (int i = 0; i < list_out.size(); i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
@@ -107,10 +107,10 @@ public class SpillMergeActor extends UntypedActor {
 //                mergeFile("/root/spill_out/0.txt","/root/spill_out/1.txt");
 //            }
             if("StartMerge".equals((String)message)){
-                File[] files = getFiles("/root/spill_out");
+                File[] files = getFiles("testData/spill_out");
                 for (File file :files){
                     if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
-                        mergeFile("/root/spill_out/out.txt",file.toString());
+                        mergeFile("testData/spill_out/out.txt",file.toString());
                     }
                 }
                 groupActor.tell("StartGrouping",getSelf());

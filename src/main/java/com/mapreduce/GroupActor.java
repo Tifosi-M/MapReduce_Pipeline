@@ -32,7 +32,7 @@ public class GroupActor extends UntypedActor {
         if(message instanceof String) {
             if ("StartGrouping".equals((String)message)) {
                 logger.info("Grouping阶段开始");
-                File srcFile = new File("/root/spill_out/out.txt");
+                File srcFile = new File("testData/spill_out/out.txt");
                 LineIterator it = null;
                 try {
                     it = FileUtils.lineIterator(srcFile, "UTF-8");

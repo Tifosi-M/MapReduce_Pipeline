@@ -35,7 +35,7 @@ public class OutputData<K, V> {
 	//运行完成，写出结果到文本文件
 	public void writeToFile() {
 		logger.debug("结果写入文件");
-		File file=new File("/root/spill_out/result.txt");
+		File file=new File("testData/spill_out/result.txt");
 		if(!file.exists())
 			try {
 				file.createNewFile();

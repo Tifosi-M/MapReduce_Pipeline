@@ -31,7 +31,7 @@ public class SpillActor extends UntypedActor {
     public void preStart() throws Exception {
 //        spillMergeActoy = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
         spillMergeActor = getContext().actorSelection("../SpillMergeActor");
-        Files.createFile(Paths.get("/root/spill_out/out.txt"));
+        Files.createFile(Paths.get("testData/spill_out/out.txt"));
     }
 
     @Override
@@ -45,12 +45,12 @@ public class SpillActor extends UntypedActor {
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue  = null;
                 mappedKeyValue = new LinkedList<>();
-                registThread();
                 new Thread(()->{
+                    registThread();
                     int tmpcount = count++;
 //                    Collections.sort(tmp);
                     loger.debug("正在写入文件" + tmpcount);
-                    File srcFile = new File("/root/spill_out/" + tmpcount + ".txt");
+                    File srcFile = new File("testData/spill_out/" + tmpcount + ".txt");
                     RandomAccessFile raf = null;
                     try {
                         raf = new RandomAccessFile(srcFile, "rw");
@@ -96,7 +96,7 @@ public class SpillActor extends UntypedActor {
                 new Thread(()->{
 //                    Collections.sort(mappedKeyValue);
                     loger.debug("正在写入文件" + count);
-                    File srcFile = new File("/root/spill_out/" + count + ".txt");
+                    File srcFile = new File("testData/spill_out/" + count + ".txt");
                     RandomAccessFile raf = null;
                     try {
                         raf = new RandomAccessFile(srcFile, "rw");

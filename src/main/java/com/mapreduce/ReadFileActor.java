@@ -31,7 +31,7 @@ public class ReadFileActor extends UntypedActor {
         if (message.equals("start")) {
             int count = 0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-            RandomAccessFile raf = new RandomAccessFile(new File("/root/input.txt"), "r");
+            RandomAccessFile raf = new RandomAccessFile(new File("testData/input.txt"), "r");
             FileChannel fc = raf.getChannel();
             MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
             StringBuffer sbf = new StringBuffer();
