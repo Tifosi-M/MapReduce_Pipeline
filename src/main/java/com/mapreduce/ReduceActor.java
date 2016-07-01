@@ -2,10 +2,13 @@ package com.mapreduce;
 
 import WordCount.ReduceWC;
 import akka.actor.ActorSelection;
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +19,6 @@ public class ReduceActor extends UntypedActor {
     private Class<? extends Reducer<String, Integer, String, Integer>> reduceClass;
     private static Logger logger = LogManager.getLogger(ReduceActor.class.getName());
     private OutputData<String, Integer> outputData =new OutputData<String, Integer>();
-    private ActorSelection selection = getContext().actorSelection("../UserActor");
     Reducer<String, Integer, String, Integer> initializeReducer() {
         try {
             return ReduceWC.class.newInstance();
@@ -39,6 +41,7 @@ public class ReduceActor extends UntypedActor {
             }
             logger.info("Reduce阶段结束========================");
             outputData.writeToFile();
+            Files.delete(Paths.get("/root/spill_out/out.txt"));
         }
     }
 }
