@@ -24,33 +24,44 @@ public class ReadFileActor extends UntypedActor {
         mapActor = getContext().actorSelection("../MapActor");
 
     }
-
+    public File[] getFiles(String path){
+        File file = new File(path);
+        File[] fileList = file.listFiles();
+        return fileList;
+    }
 
     @Override
     public void onReceive(Object message) throws Exception {
         if (message.equals("start")) {
             int count = 0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-            RandomAccessFile raf = new RandomAccessFile(new File("testData/input.txt"), "r");
-            FileChannel fc = raf.getChannel();
-            MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-            StringBuffer sbf = new StringBuffer();
-            while (mbb.remaining() > 0) {
-                char data = (char) mbb.get();
-                if (data != '\n') {
-                    sbf.append(data);
-                } else {
-                    initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
-                    sbf.setLength(0);
-                    if (count == 800) {
-                        mapActor.tell(initialKeyValue, getSelf());
-                        initialKeyValue = null;
-                        initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-                        count = 0;
+            File[] files = getFiles("testData/inputdata");
+            for(File file : files){
+                if(!file.getName().split("\\.")[0].equals("")&&file.getName().split("\\.")[0].substring(0,5).equals("input")) {
+                    RandomAccessFile raf = new RandomAccessFile(new File(file.toString()), "r");
+                    FileChannel fc = raf.getChannel();
+                    MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
+                    StringBuffer sbf = new StringBuffer();
+                    while (mbb.remaining() > 0) {
+                        char data = (char) mbb.get();
+                        if (data != '\n') {
+                            sbf.append(data);
+                        } else {
+                            initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
+                            sbf.setLength(0);
+                            if (count == 200000) {
+                                mapActor.tell(initialKeyValue, getSelf());
+                                initialKeyValue = null;
+                                initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
+                                count = 0;
+                            }
+                            count++;
+                        }
                     }
-                    count++;
                 }
             }
+
+
             mapActor.tell(initialKeyValue, getSelf());
 //            List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
 //            LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");

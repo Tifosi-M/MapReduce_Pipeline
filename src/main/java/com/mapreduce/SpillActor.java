@@ -41,7 +41,7 @@ public class SpillActor extends UntypedActor {
                 mappedKeyValue.add(item);
             }
             ((List<KeyValue<String,Integer>>) message).clear();
-            if (mappedKeyValue.size() > 2500000) {
+            if (mappedKeyValue.size() > 5000000) {
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue  = null;
                 mappedKeyValue = new LinkedList<>();
@@ -58,7 +58,7 @@ public class SpillActor extends UntypedActor {
                         e.printStackTrace();
                     }
                     FileChannel fileChannel = raf.getChannel();
-                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(32 * 1024 * 1024);
+                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(64 * 1024 * 1024);
                     try {
                         int size = tmp.size();
                         for (int i = 0; i < size; i++) {
@@ -104,7 +104,7 @@ public class SpillActor extends UntypedActor {
                         e.printStackTrace();
                     }
                     FileChannel fileChannel = raf.getChannel();
-                    ByteBuffer rBuffer = ByteBuffer.allocate(32 * 1024 * 1024);
+                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(64 * 1024 * 1024);
                     try {
                         int size = mappedKeyValue.size();
                         for (int i = 0; i < size; i++) {
