@@ -8,6 +8,7 @@ branches:
     - master
 
 before_script:
+  - cp testData/inputdata/input1.txt testData/inputdata/input2.txt
   - mkdir testData/spill_out
   - chmod ugo+x run-test.sh
 script:
