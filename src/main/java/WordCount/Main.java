@@ -20,14 +20,13 @@ public class Main {
 
 		try {
 			readFile("testData/inputData/input1.txt");
+			wcMR.startShuffle();
+			wcMR.startReduce();
+			wcMR.writeToFile();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		wcMR.startShuffle();
-		wcMR.startReduce();
-		wcMR.writeToFile();
-
+		
 	}
 
 	public void readFile(String filename) throws IOException {
