@@ -19,14 +19,14 @@ public class Main {
 		wcMR.setParallelThreadNum(8);
 
 		try {
-			readFile("/root/input.txt");
+			readFile("testData/inputData/input1.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		wcMR.startShuffle();
-//		wcMR.startReduce();
-//		wcMR.writeToFile();
+		wcMR.startReduce();
+		wcMR.writeToFile();
 
 	}
 
