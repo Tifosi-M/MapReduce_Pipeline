@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -209,11 +211,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
         }
         logger.info("溢写合并开始");
-//        this.spillMerge();
-//        logger.debug("溢写合并结束");
-//        logger.debug("Grouping 开始");
-//        this.grouping();
-//        logger.debug("Grouping 结束");
+        this.spillMerge();
+        logger.debug("溢写合并结束");
+        logger.debug("Grouping 开始");
+        this.grouping();
+        logger.debug("Grouping 结束");
     }
 
 
@@ -413,6 +415,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
     public void spillMerge() {
         File[] files = getFiles("testData/spill_out");
+        try {
+            Files.createFile(Paths.get("testData/spill_out/out.txt"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         for (File file :files){
             if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
                 mergeFile("testData/spill_out/out.txt",file.toString());
