@@ -58,7 +58,7 @@ public class SpillActor extends UntypedActor {
                         e.printStackTrace();
                     }
                     FileChannel fileChannel = raf.getChannel();
-                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(64 * 1024 * 1024);
+                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(128 * 1024 * 1024);
                     try {
                         int size = tmp.size();
                         for (int i = 0; i < size; i++) {
@@ -104,7 +104,7 @@ public class SpillActor extends UntypedActor {
                         e.printStackTrace();
                     }
                     FileChannel fileChannel = raf.getChannel();
-                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(64 * 1024 * 1024);
+                    ByteBuffer rBuffer = ByteBuffer.allocateDirect(128 * 1024 * 1024);
                     try {
                         int size = mappedKeyValue.size();
                         for (int i = 0; i < size; i++) {
