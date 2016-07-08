@@ -13,9 +13,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.security.Key;
+import java.util.*;
 
 /**
  * Created by szp on 16/5/27.
@@ -49,6 +48,14 @@ public class SpillActor extends UntypedActor {
                     registThread();
                     int tmpcount = count++;
 //                    Collections.sort(tmp);
+                    KeyValue[] tmps = tmp.toArray(new KeyValue[0]);
+                    QuickSort<KeyValue<String,Integer>> quickSort = new QuickSort<KeyValue<String, Integer>>( tmps);
+                    quickSort.sort();
+                    ListIterator<KeyValue<String,Integer>> it = tmp.listIterator();
+                    for(KeyValue<String,Integer> e:quickSort.getItems()){
+                        it.next();
+                        it.set(e);
+                    }
                     loger.debug("正在写入文件" + tmpcount);
                     File srcFile = new File("testData/spill_out/" + tmpcount + ".txt");
                     RandomAccessFile raf = null;
@@ -95,6 +102,14 @@ public class SpillActor extends UntypedActor {
                 registThread();
                 new Thread(()->{
 //                    Collections.sort(mappedKeyValue);
+                    KeyValue[] tmps = mappedKeyValue.toArray(new KeyValue[0]);
+                    QuickSort<KeyValue<String,Integer>> quickSort = new QuickSort<KeyValue<String, Integer>>( tmps);
+                    quickSort.sort();
+                    ListIterator<KeyValue<String,Integer>> it = mappedKeyValue.listIterator();
+                    for(KeyValue<String,Integer> e:quickSort.getItems()){
+                        it.next();
+                        it.set(e);
+                    }
                     loger.debug("正在写入文件" + count);
                     File srcFile = new File("testData/spill_out/" + count + ".txt");
                     RandomAccessFile raf = null;

@@ -50,7 +50,7 @@ public class ReadFileActor extends UntypedActor {
                         } else {
                             initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
                             sbf.setLength(0);
-                            if (count == 80000) {
+                            if (count == 200000) {
                                 mapActor.tell(initialKeyValue, getSelf());
                                 initialKeyValue = null;
                                 initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
