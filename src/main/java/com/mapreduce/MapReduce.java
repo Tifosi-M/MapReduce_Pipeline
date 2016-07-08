@@ -162,7 +162,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 List<IntermediateKey> resultMapKeys = maptasks.get(i).get().getKeys();
                 List<IntermediateValue> resultMapValues = maptasks.get(i).get().getValues();
                 for (int j = 0; j < resultMapKeys.size(); j++) {
-                    if (this.inputData.getMappedKeyValueSize() > 2500000) {
+                    if (this.inputData.getMappedKeyValueSize() > 5000000) {
                         SpillThread thread = new SpillThread();
                         thread.setSpill_list(inputData.mappedKeyValue);
                         thread.setCount(++spillfileCount);
@@ -386,7 +386,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
             FileChannel fileChannel = raf.getChannel();
-            ByteBuffer rBuffer = ByteBuffer.allocateDirect(32 * 1024 * 1024);
+            ByteBuffer rBuffer = ByteBuffer.allocateDirect(120 * 1024 * 1024);
             try {
                 int size = spill_list.size();
                 for (int i = 0; i < size; i++) {
