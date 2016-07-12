@@ -4,8 +4,8 @@ general:
       - MapReduce
 machine:
   timezone: Asia/Shanghai
-    java:
-      version: oraclejdk8
+  java:
+    version: oraclejdk8
 test:
   pre:
     - cp testData/inputdata/input1.txt testData/inputdata/input2.txt
