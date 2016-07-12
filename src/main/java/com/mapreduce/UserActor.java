@@ -22,6 +22,7 @@ public class UserActor extends UntypedActor {
 
     @Override
     public void preStart() throws Exception {
+        logger.info("读取粒度40W,数据大小1G");
         logger.info("Actor启动");
         readFileActor = getContext().actorOf(Props.create(ReadFileActor.class), "ReadFileActor");
         mapActor = getContext().actorOf(Props.create(MapActor.class), "MapActor");

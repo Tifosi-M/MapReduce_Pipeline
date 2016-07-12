@@ -38,7 +38,6 @@ public class ReadFileActor extends UntypedActor {
             File[] files = getFiles("testData/inputdata");
             for(File file : files){
                 if(!file.getName().split("\\.")[0].equals("")&&file.getName().split("\\.")[0].substring(0,5).equals("input")) {
-                    System.out.println(file.toString());
                     RandomAccessFile raf = new RandomAccessFile(new File(file.toString()), "r");
                     FileChannel fc = raf.getChannel();
                     MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
@@ -50,7 +49,7 @@ public class ReadFileActor extends UntypedActor {
                         } else {
                             initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
                             sbf.setLength(0);
-                            if (count == 200000) {
+                            if (count == 400000) {
                                 mapActor.tell(initialKeyValue, getSelf());
                                 initialKeyValue = null;
                                 initialKeyValue = new ArrayList<KeyValue<Integer, String>>();

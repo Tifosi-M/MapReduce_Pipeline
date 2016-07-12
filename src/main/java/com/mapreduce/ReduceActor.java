@@ -43,7 +43,6 @@ public class ReduceActor extends UntypedActor {
             }
             logger.info("Reduce阶段结束========================");
             outputData.writeToFile();
-            Files.delete(Paths.get("testData/spill_out/out.txt"));
             System.exit(0);
         }
     }

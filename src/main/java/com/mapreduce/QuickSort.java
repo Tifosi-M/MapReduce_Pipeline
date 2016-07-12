@@ -11,7 +11,7 @@ import java.util.Random;
 public class QuickSort<T extends Comparable<T>>
 {
 
-    private final T[] items;
+    private  T[] items;
 
     /**
      * @param items The set of items to be sorted
@@ -19,9 +19,9 @@ public class QuickSort<T extends Comparable<T>>
     public QuickSort(T[] items)
     {
         this.items = items;
-
-        /* Shuffle the array */
-        this.shuffleArray(items);
+//
+//        /* Shuffle the array */
+//        this.shuffleArray(items);
     }
 
     public void sort()

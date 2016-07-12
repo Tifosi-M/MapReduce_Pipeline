@@ -8,8 +8,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by szp on 16/6/1.
@@ -17,6 +23,7 @@ import java.util.LinkedList;
 public class SpillMergeActor extends UntypedActor {
     private static Logger loger = LogManager.getLogger(SpillMergeActor.class.getName());
     private ActorSelection groupActor;
+    private int uniqueCount = 100;
 
     @Override
     public void preStart() throws Exception {
@@ -24,12 +31,12 @@ public class SpillMergeActor extends UntypedActor {
         groupActor = getContext().actorSelection("../GroupActor");
     }
 
-    public void mergeFile(String filename1,String filename2){
+    public void mergeFile(String filename1, String filename2) {
         LineIterator it1 = null;
         LineIterator it2 = null;
-        LinkedList<KeyValue<String,Integer>> list_1 = new LinkedList<KeyValue<String,Integer>>();
-        LinkedList<KeyValue<String,Integer>> list_2 = new LinkedList<KeyValue<String,Integer>>();
-        LinkedList<KeyValue<String,Integer>> list_out = new LinkedList<KeyValue<String,Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_1 = new LinkedList<KeyValue<String, Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_2 = new LinkedList<KeyValue<String, Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_out = new LinkedList<KeyValue<String, Integer>>();
         File file1 = new File(filename1);
         File file2 = new File(filename2);
         try {
@@ -72,48 +79,89 @@ public class SpillMergeActor extends UntypedActor {
                     list_out.add(keyValue2);
                     list_2.remove(0);
                 }
-            }else{
-                if(list_1.size()==0){
+            } else {
+                if (list_1.size() == 0) {
                     list_out.add(list_2.remove(0));
-                }else{
+                } else {
                     list_out.add(list_1.remove(0));
                 }
             }
         }
-        if(file1.getName().equals("0.txt"))
-            file1.delete();
+
+        file1.delete();
         file2.delete();
 
-        try {
-            File file = new File("testData/spill_out/out.txt");
-            for (int i = 0; i < list_out.size(); i++) {
-                KeyValue<String, Integer> keyValue = list_out.remove(0);
-                FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+//        try {
+            File srcFile = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
+            RandomAccessFile raf = null;
+            try {
+                raf = new RandomAccessFile(srcFile, "rw");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            FileChannel fileChannel = raf.getChannel();
+            ByteBuffer rBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
+            try {
+                int size = list_out.size();
+                for (int i = 0; i < size; i++) {
+                    KeyValue<String, Integer> keyValue = list_out.remove(0);
+                    rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            rBuffer.flip();
+            try {
+                fileChannel.write(rBuffer);
+                fileChannel.close();
+                raf.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+
+//            File file = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
+//            for (int i = 0; i < list_out.size(); i++) {
+//                KeyValue<String, Integer> keyValue = list_out.remove(0);
+//                FileUtils.writeStringToFile(file, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
-    public File[] getFiles(String path){
+
+    public File[] getFiles(String path) {
         File file = new File(path);
         File[] fileList = file.listFiles();
         return fileList;
     }
+
     @Override
     public void onReceive(Object message) throws Exception {
-        if(message instanceof String){
+        if (message instanceof String) {
             loger.info("开始进行溢写合并");
-//            if("StartMerge".equals((String)message)){
-//                mergeFile("/root/spill_out/0.txt","/root/spill_out/1.txt");
-//            }
-            if("StartMerge".equals((String)message)){
-                File[] files = getFiles("testData/spill_out");
-                for (File file :files){
-                    if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
-                        mergeFile("testData/spill_out/out.txt",file.toString());
+            if ("StartMerge".equals((String) message)) {
+                int filecount = 0;
+                do{
+                    File[] files = getFiles("testData/spill_out");
+                    List<String> filenames = new ArrayList<String>();
+                    for (File file : files) {
+                        if (!file.getName().split("\\.")[0].equals("") && !file.getName().split("\\.")[0].equals("out")) {
+                            filenames.add(file.toString());
+//                        mergeFile("testData/spill_out/out.txt",file.toString());
+                        }
                     }
-                }
-                groupActor.tell("StartGrouping",getSelf());
+                    filecount = filenames.size();
+                    for (int i = 0; i < filecount / 2; i++) {
+                        mergeFile(filenames.remove(0), filenames.remove(0));
+                        filecount--;
+                    }
+                    filenames.clear();
+
+                }while(filecount>=2);
+
+                groupActor.tell("StartGrouping", getSelf());
                 loger.info("溢写合并完成");
                 context().stop(getSelf());
             }

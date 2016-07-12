@@ -1,0 +1,18 @@
+general:
+  branches:
+    ignore:
+      - MapReduce
+machine:
+  timezone: Asia/Shanghai
+    java:
+      version: oraclejdk8
+test:
+  pre:
+    - cp testData/inputdata/input1.txt testData/inputdata/input2.txt
+    - mkdir testData/spill_out
+    - chmod ugo+x run-test.sh
+  override:
+    - mvn assembly:assembly
+    - cp target/PMT-MapReduce-1.0-SNAPSHOT-jar-with-dependencies.jar mapreduce.jar
+    - java -jar mapreduce.jar
+    - ./run-test.sh

@@ -4,10 +4,13 @@ import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +35,10 @@ public class GroupActor extends UntypedActor {
         if(message instanceof String) {
             if ("StartGrouping".equals((String)message)) {
                 logger.info("Grouping阶段开始");
-                File srcFile = new File("testData/spill_out/out.txt");
+                File file = new File("testData/spill_out");
+                String[] names = file.list( new SuffixFileFilter(".txt"));
+
+                File srcFile = new File("testData/spill_out/"+names[0]);
                 LineIterator it = null;
                 try {
                     it = FileUtils.lineIterator(srcFile, "UTF-8");
