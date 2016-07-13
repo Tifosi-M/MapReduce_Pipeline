@@ -6,6 +6,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.misc.Cleaner;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -91,34 +93,42 @@ public class SpillMergeActor extends UntypedActor {
         file1.delete();
         file2.delete();
 
-//        try {
-            File srcFile = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
-            RandomAccessFile raf = null;
-            try {
-                raf = new RandomAccessFile(srcFile, "rw");
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-            FileChannel fileChannel = raf.getChannel();
-            ByteBuffer rBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
-            try {
-                int size = list_out.size();
-                for (int i = 0; i < size; i++) {
-                    KeyValue<String, Integer> keyValue = list_out.remove(0);
-                    rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
+        File srcFile = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(srcFile, "rw");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        FileChannel fileChannel = raf.getChannel();
+        ByteBuffer rBuffer = ByteBuffer.allocateDirect(512 * 1024 * 1024);
+        try {
+            int size = list_out.size();
+            for (int i = 0; i < size; i++) {
+                KeyValue<String, Integer> keyValue = list_out.remove(0);
+                rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
+                if (rBuffer.limit() == rBuffer.capacity() - 2) {
+                    rBuffer.flip();
+                    fileChannel.write(rBuffer);
+                    rBuffer.clear();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            rBuffer.flip();
-            try {
-                fileChannel.write(rBuffer);
-                fileChannel.close();
-                raf.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        rBuffer.flip();
+        try {
+            fileChannel.write(rBuffer);
+            fileChannel.close();
+            raf.close();
+            rBuffer.clear();
+            if (rBuffer == null) return;
+            Cleaner cleaner = ((DirectBuffer) rBuffer).cleaner();
+            if (cleaner != null) cleaner.clean();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
 //            File file = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
@@ -143,13 +153,12 @@ public class SpillMergeActor extends UntypedActor {
             loger.info("开始进行溢写合并");
             if ("StartMerge".equals((String) message)) {
                 int filecount = 0;
-                do{
+                do {
                     File[] files = getFiles("testData/spill_out");
                     List<String> filenames = new ArrayList<String>();
                     for (File file : files) {
                         if (!file.getName().split("\\.")[0].equals("") && !file.getName().split("\\.")[0].equals("out")) {
                             filenames.add(file.toString());
-//                        mergeFile("testData/spill_out/out.txt",file.toString());
                         }
                     }
                     filecount = filenames.size();
@@ -159,7 +168,7 @@ public class SpillMergeActor extends UntypedActor {
                     }
                     filenames.clear();
 
-                }while(filecount>=2);
+                } while (filecount >= 2);
 
                 groupActor.tell("StartGrouping", getSelf());
                 loger.info("溢写合并完成");
