@@ -4,15 +4,13 @@ import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sun.misc.Cleaner;
 import sun.nio.ch.DirectBuffer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -154,12 +152,11 @@ public class SpillMergeActor extends UntypedActor {
             if ("StartMerge".equals((String) message)) {
                 int filecount = 0;
                 do {
-                    File[] files = getFiles("testData/spill_out");
+                    File file = new File("testData/spill_out");
                     List<String> filenames = new ArrayList<String>();
-                    for (File file : files) {
-                        if (!file.getName().split("\\.")[0].equals("") && !file.getName().split("\\.")[0].equals("out")) {
-                            filenames.add(file.toString());
-                        }
+                    File[] files = file.listFiles((FilenameFilter) new SuffixFileFilter(".txt"));
+                    for (File txtfile : files) {
+                        filenames.add(txtfile.toString());
                     }
                     filecount = filenames.size();
                     for (int i = 0; i < filecount / 2; i++) {
