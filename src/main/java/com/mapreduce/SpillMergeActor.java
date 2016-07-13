@@ -99,13 +99,13 @@ public class SpillMergeActor extends UntypedActor {
             e.printStackTrace();
         }
         FileChannel fileChannel = raf.getChannel();
-        ByteBuffer rBuffer = ByteBuffer.allocateDirect(512 * 1024 * 1024);
+        ByteBuffer rBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 1024);
         try {
             int size = list_out.size();
             for (int i = 0; i < size; i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
-                if (rBuffer.limit() == rBuffer.capacity() - 2) {
+                if (rBuffer.limit() >= rBuffer.capacity()*0.9) {
                     rBuffer.flip();
                     fileChannel.write(rBuffer);
                     rBuffer.clear();
@@ -121,7 +121,10 @@ public class SpillMergeActor extends UntypedActor {
             fileChannel.close();
             raf.close();
             rBuffer.clear();
-            if (rBuffer == null) return;
+            if (rBuffer == null){
+                System.out.println("Buffer is null");
+                return;
+            }
             Cleaner cleaner = ((DirectBuffer) rBuffer).cleaner();
             if (cleaner != null) cleaner.clean();
         } catch (IOException e) {
