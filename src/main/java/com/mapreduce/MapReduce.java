@@ -3,8 +3,11 @@ package com.mapreduce;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.misc.Cleaner;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,7 +30,8 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     private OutputData<OutputReduceKey, OutputReduceValue> outputData;
     private static Logger logger = LogManager.getLogger(MapReduce.class.getName());
     private int spillfileCount = 0;
-    private List<SpillThread>list_thread = new ArrayList<SpillThread>();
+    private List<SpillThread> list_thread = new ArrayList<SpillThread>();
+    private int uniqueCount = 100;
 
 	/*
      * phase_mp变量确定执行Mapreduce的哪个阶段
@@ -70,7 +74,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     public void setParallelThreadNum(int num) {
         this.parallelThreadNum = num;
     }
-	
+
 	
 	/*
 	 * addKeyValue
@@ -203,7 +207,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      */
     public void startShuffle() {
         spillReamin();
-        for(SpillThread thread:list_thread){
+        for (SpillThread thread : list_thread) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
@@ -370,15 +374,30 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     class SpillThread extends Thread {
         private List<KeyValue<IntermediateKey, IntermediateValue>> spill_list;
         private int count;
+
         public void setSpill_list(List<KeyValue<IntermediateKey, IntermediateValue>> list) {
             spill_list = list;
         }
-        public void setCount(int count){this.count = count;}
+
+        public void setCount(int count) {
+            this.count = count;
+        }
+
         @Override
         public void run() {
 //            Collections.sort(spill_list);
-            logger.debug("缓存溢写文件"+count+"开始");
-            File srcFile = new File("testData/spill_out/"+count + ".txt");
+
+            KeyValue[] tmps = spill_list.toArray(new KeyValue[0]);
+            QuickSort<KeyValue<IntermediateKey, IntermediateValue>> quickSort = new QuickSort<KeyValue<IntermediateKey, IntermediateValue>>(tmps);
+            quickSort.sort();
+            ListIterator<KeyValue<IntermediateKey, IntermediateValue>> it = spill_list.listIterator();
+            for (KeyValue<IntermediateKey, IntermediateValue> e : tmps) {
+                it.next();
+                it.set(e);
+            }
+
+            logger.debug("缓存溢写文件" + count + "开始");
+            File srcFile = new File("testData/spill_out/" + count + ".txt");
             RandomAccessFile raf = null;
             try {
                 raf = new RandomAccessFile(srcFile, "rw");
@@ -390,7 +409,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             try {
                 int size = spill_list.size();
                 for (int i = 0; i < size; i++) {
-                    KeyValue<IntermediateKey,IntermediateValue> keyValue = spill_list.remove(0);
+                    KeyValue<IntermediateKey, IntermediateValue> keyValue = spill_list.remove(0);
 //                    FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                     rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                 }
@@ -402,10 +421,11 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
             spill_list = null;
-            logger.info("文件"+count+"溢写结束");
+            logger.info("文件" + count + "溢写结束");
         }
     }
-    public void spillReamin(){
+
+    public void spillReamin() {
         SpillThread thread = new SpillThread();
         thread.setSpill_list(inputData.mappedKeyValue);
         thread.setCount(++spillfileCount);
@@ -414,21 +434,31 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     }
 
     public void spillMerge() {
-        File[] files = getFiles("testData/spill_out");
-        try {
-            Files.createFile(Paths.get("testData/spill_out/out.txt"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        for (File file :files){
-            if(!file.getName().split("\\.")[0].equals("")&&!file.getName().split("\\.")[0].equals("out")){
-                mergeFile("testData/spill_out/out.txt",file.toString());
+        int filecount = 0;
+        do {
+            File[] files = getFiles("testData/spill_out");
+            List<String> filenames = new ArrayList<String>();
+            for (File file : files) {
+                if (!file.getName().split("\\.")[0].equals("") && !file.getName().split("\\.")[0].equals("out")) {
+                    filenames.add(file.toString());
+                }
             }
-        }
+            filecount = filenames.size();
+            for (int i = 0; i < filecount / 2; i++) {
+                mergeFile(filenames.remove(0), filenames.remove(0));
+                filecount--;
+            }
+            filenames.clear();
+
+        } while (filecount >= 2);
         logger.debug("溢写合并结束");
     }
+
     public void grouping() {
-        File srcFile = new File("testData/spill_out/out.txt");
+
+        File file = new File("testData/spill_out");
+        String[] names = file.list( new SuffixFileFilter(".txt"));
+        File srcFile = new File("testData/spill_out/"+names[0]);
         LineIterator it = null;
         try {
             it = FileUtils.lineIterator(srcFile, "UTF-8");
@@ -440,23 +470,24 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 String line = it.nextLine();
                 String[] str = line.split(" ");
                 IntermediateKey key = (IntermediateKey) str[0];
-                IntermediateValue value = (IntermediateValue)(Integer.valueOf(str[1]));
+                IntermediateValue value = (IntermediateValue) (Integer.valueOf(str[1]));
                 this.inputData.list.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
             }
-        }catch (ArrayIndexOutOfBoundsException e){
+        } catch (ArrayIndexOutOfBoundsException e) {
             e.printStackTrace();
 
-        }finally {
+        } finally {
             LineIterator.closeQuietly(it);
         }
         inputData.grouping();
     }
-    public void mergeFile(String filename1,String filename2){
+
+    public void mergeFile(String filename1, String filename2) {
         LineIterator it1 = null;
         LineIterator it2 = null;
-        LinkedList<KeyValue<String,Integer>> list_1 = new LinkedList<KeyValue<String,Integer>>();
-        LinkedList<KeyValue<String,Integer>> list_2 = new LinkedList<KeyValue<String,Integer>>();
-        LinkedList<KeyValue<String,Integer>> list_out = new LinkedList<KeyValue<String,Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_1 = new LinkedList<KeyValue<String, Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_2 = new LinkedList<KeyValue<String, Integer>>();
+        LinkedList<KeyValue<String, Integer>> list_out = new LinkedList<KeyValue<String, Integer>>();
         File file1 = new File(filename1);
         File file2 = new File(filename2);
         try {
@@ -499,29 +530,57 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                     list_out.add(keyValue2);
                     list_2.remove(0);
                 }
-            }else{
-                if(list_1.size()==0){
+            } else {
+                if (list_1.size() == 0) {
                     list_out.add(list_2.remove(0));
-                }else{
+                } else {
                     list_out.add(list_1.remove(0));
                 }
             }
         }
-        if(file1.getName().equals("0.txt"))
-            file1.delete();
+
+        file1.delete();
         file2.delete();
 
+        File srcFile = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
+        RandomAccessFile raf = null;
         try {
-            File file = new File("testData/spill_out/out.txt");
-            for (int i = 0; i < list_out.size(); i++) {
+            raf = new RandomAccessFile(srcFile, "rw");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        FileChannel fileChannel = raf.getChannel();
+        ByteBuffer rBuffer = ByteBuffer.allocateDirect(512 * 1024 * 1024);
+        try {
+            int size = list_out.size();
+            for (int i = 0; i < size; i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
-                FileUtils.writeStringToFile(file,keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
+                rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
+                if (rBuffer.limit() == rBuffer.capacity() - 2) {
+                    rBuffer.flip();
+                    fileChannel.write(rBuffer);
+                    rBuffer.clear();
+                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        rBuffer.flip();
+        try {
+            fileChannel.write(rBuffer);
+            fileChannel.close();
+            raf.close();
+            rBuffer.clear();
+            if (rBuffer == null) return;
+            Cleaner cleaner = ((DirectBuffer) rBuffer).cleaner();
+            if (cleaner != null) cleaner.clean();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-    public File[] getFiles(String path){
+
+    public File[] getFiles(String path) {
         File file = new File(path);
         File[] fileList = file.listFiles();
         return fileList;

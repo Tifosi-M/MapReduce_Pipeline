@@ -19,7 +19,8 @@ public class Main {
 		wcMR.setParallelThreadNum(8);
 
 		try {
-			readFile("testData/inputdata/input1.txt");
+			readFiles("testData/inputdata");
+
 			wcMR.startShuffle();
 			wcMR.startReduce();
 			wcMR.writeToFile();
@@ -28,30 +29,41 @@ public class Main {
 		}
 
 	}
+	public File[] getFiles(String path){
+		File file = new File(path);
+		File[] fileList = file.listFiles();
+		return fileList;
+	}
 
-	public void readFile(String filename) throws IOException {
+	public void readFiles(String filename) throws IOException {
 		int count=0;
 		logger.info("开始读取文件==================");
-		RandomAccessFile raf = new RandomAccessFile(new File(filename), "r");
-		FileChannel fc = raf.getChannel();
-		MappedByteBuffer mbb =  fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-		StringBuffer sbf = new StringBuffer();
-		while(mbb.remaining()>0){
-			char data = (char)mbb.get();
-			if(data!='\n'){
-				sbf.append(data);
-			}else{
-				wcMR.addKeyValue(0,sbf.toString());
-				sbf.setLength(0);
-				if(count == 800000){
-					wcMR.startMap();
-					count=0;
+		File[] files = getFiles(filename);
+		for(File file : files) {
+			if (!file.getName().split("\\.")[0].equals("") && file.getName().split("\\.")[0].substring(0, 5).equals("input")){
+				RandomAccessFile raf = new RandomAccessFile(new File(file.toString()), "r");
+				FileChannel fc = raf.getChannel();
+				MappedByteBuffer mbb =  fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
+				StringBuffer sbf = new StringBuffer();
+				while(mbb.remaining()>0){
+					char data = (char)mbb.get();
+					if(data!='\n'){
+						sbf.append(data);
+					}else{
+						wcMR.addKeyValue(0,sbf.toString());
+						sbf.setLength(0);
+						if(count == 800000){
+							wcMR.startMap();
+							count=0;
+						}
+						count++;
+					}
 				}
-				count++;
+				fc.close();
+				raf.close();
 			}
 		}
-		fc.close();
-		raf.close();
+
 //		LineIterator it = FileUtils.lineIterator(new File(filename), "UTF-8");
 //		try {
 //			while (it.hasNext()) {
