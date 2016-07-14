@@ -1,7 +1,10 @@
 general:
   branches:
-    ignore:
+    only:
       - MapReduce
+  artifacts:
+    - mapreduce.jar
+
 machine:
   timezone: Asia/Shanghai
   java:
