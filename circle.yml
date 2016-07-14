@@ -1,7 +1,7 @@
 general:
   branches:
     only:
-      - MapReduce
+      - master
   artifacts:
     - mapreduce.jar
 
