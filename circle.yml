@@ -3,7 +3,7 @@ general:
     only:
       - master
   artifacts:
-    - mapreduce.jar
+    - target/PMT-MapReduce-1.0-SNAPSHOT.jar
 
 machine:
   timezone: Asia/Shanghai

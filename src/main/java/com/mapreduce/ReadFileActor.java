@@ -60,28 +60,7 @@ public class ReadFileActor extends UntypedActor {
                     }
                 }
             }
-
-
             mapActor.tell(initialKeyValue, getSelf());
-//            List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-//            LineIterator it = FileUtils.lineIterator(new File("/root/input.txt"), "UTF-8");
-//            logger.debug("开始读取文件==========================");
-//            try {
-//                while (it.hasNext()) {
-//                    String line = it.nextLine();
-//                    initialKeyValue.add(new KeyValue<Integer, String>(0, line));
-//                    if (count == 800) {
-//                        //发送消息给MapActoy
-//                        mapActor.tell(initialKeyValue,getSelf());
-//                        initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
-//                        count = 0;
-//                    }
-//                    count++;
-//                }
-//                mapActor.tell(initialKeyValue,getSelf());
-//            } finally {
-//                LineIterator.closeQuietly(it);
-//            }
             mapActor.tell("END", getSelf());
             logger.info("文件读取结束");
             context().stop(getSelf());

@@ -33,7 +33,7 @@ public class GroupActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if(message instanceof String) {
-            if ("StartGrouping".equals((String)message)) {
+            if ("StartGrouping".equals(message)) {
                 logger.info("Grouping阶段开始");
                 File file = new File("testData/spill_out");
                 String[] names = file.list( new SuffixFileFilter(".txt"));
@@ -49,7 +49,7 @@ public class GroupActor extends UntypedActor {
                     while (it.hasNext()) {
                         String line = it.nextLine();
                         String[] str = line.split(" ");
-                        list.add(new KeyValue<String, Integer>((String) str[0], (Integer.valueOf(str[1]))));
+                        list.add(new KeyValue<String, Integer>(str[0], (Integer.valueOf(str[1]))));
                     }
                 }catch (ArrayIndexOutOfBoundsException e){
                     e.printStackTrace();

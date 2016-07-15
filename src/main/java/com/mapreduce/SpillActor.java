@@ -70,7 +70,6 @@ public class SpillActor extends UntypedActor {
                         int size = tmp.size();
                         for (int i = 0; i < size; i++) {
                             KeyValue<String, Integer> keyValue = tmp.remove(0);
-//                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                             rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                         }
                     } catch (Exception e) {
@@ -89,16 +88,10 @@ public class SpillActor extends UntypedActor {
                 }).start();
 
             }
-//            if (count == 2) {
-//                spillMergeActor.tell("StartMerge", getSelf());
-//            }
-//            if (count > 2) {
-//                spillMergeActor.tell("Merge", getSelf());
-//            }
 
         }
         if (message instanceof String) {
-            if ("END".equals((String) message)) {
+            if ("END".equals(message)) {
                 if (mappedKeyValue.size() > 0) {
                     registThread();
                     new Thread(() -> {
@@ -125,7 +118,6 @@ public class SpillActor extends UntypedActor {
                             int size = mappedKeyValue.size();
                             for (int i = 0; i < size; i++) {
                                 KeyValue<String, Integer> keyValue = mappedKeyValue.remove(0);
-//                        FileUtils.writeStringToFile(srcFile, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
                                 rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
                             }
                         } catch (Exception e) {
@@ -143,12 +135,7 @@ public class SpillActor extends UntypedActor {
                         loger.debug("文件" + count + "写入结束");
                         count++;
                         unregistThread();
-//                if (count == 2) {
-//                    spillMergeActor.tell("StartMerge", getSelf());
-//                }
-//                if (count > 2) {
-//                    spillMergeActor.tell("Merge", getSelf());
-//                }
+
                     }).start();
                 }
                 while (thread_count != 0) ;

@@ -50,7 +50,7 @@ public class SpillMergeActor extends UntypedActor {
             while (it1.hasNext()) {
                 String line = it1.nextLine();
                 String[] str = line.split(" ");
-                String key = (String) str[0];
+                String key = str[0];
                 Integer value = Integer.parseInt(str[1]);
                 list_1.add(new KeyValue<String, Integer>(key, value));
             }
@@ -61,7 +61,7 @@ public class SpillMergeActor extends UntypedActor {
             while (it2.hasNext()) {
                 String line = it2.nextLine();
                 String[] str = line.split(" ");
-                String key = (String) str[0];
+                String key = str[0];
                 Integer value = Integer.parseInt(str[1]);
                 list_2.add(new KeyValue<String, Integer>(key, value));
             }
@@ -130,16 +130,6 @@ public class SpillMergeActor extends UntypedActor {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-//            File file = new File("testData/spill_out/out" + uniqueCount++ + ".txt");
-//            for (int i = 0; i < list_out.size(); i++) {
-//                KeyValue<String, Integer> keyValue = list_out.remove(0);
-//                FileUtils.writeStringToFile(file, keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n", "utf-8", true);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
     public File[] getFiles(String path) {
@@ -152,7 +142,7 @@ public class SpillMergeActor extends UntypedActor {
     public void onReceive(Object message) throws Exception {
         if (message instanceof String) {
             loger.info("开始进行溢写合并");
-            if ("StartMerge".equals((String) message)) {
+            if ("StartMerge".equals(message)) {
                 int filecount = 0;
                 do {
                     File file = new File("testData/spill_out");
@@ -174,11 +164,6 @@ public class SpillMergeActor extends UntypedActor {
                 loger.info("溢写合并完成");
                 context().stop(getSelf());
             }
-//            if("END".equals((String)message)){
-//                groupActor.tell("StartGrouping",getSelf());
-//                loger.info("溢写合并完成");
-//                context().stop(getSelf());
-//            }
         }
     }
 }

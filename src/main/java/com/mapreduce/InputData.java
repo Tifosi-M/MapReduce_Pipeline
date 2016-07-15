@@ -16,11 +16,7 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     List<KeyValue<IntermediateKey, IntermediateValue>> mappedKeyValue;
     List<GroupedKeyValue<IntermediateKey, IntermediateValue>> gKVList;
     List<KeyValue<IntermediateKey, IntermediateValue>> list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
-//    Queue<List<KeyValue<InputMapKey, InputMapValue>>> initialKeyValue_queue = new LinkedList<List<KeyValue<InputMapKey, InputMapValue>>>();
-    int spillfileCount = 0;
-    int spillCount = 0;
     private static Logger logger = LogManager.getLogger(InputData.class.getName());
-    int setcount = 0;
 
 
     InputData() {
@@ -38,19 +34,7 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         }else{
             this.initialKeyValue.add(new KeyValue<InputMapKey, InputMapValue>(key, value));
         }
-//        if(this.initialKeyValue.size()<1000000)
-//            this.initialKeyValue.add(new KeyValue<InputMapKey, InputMapValue>(key, value));
-//        else{
-//            putInitialKeyValueToInitialKeyValue_queue();
-//        }
     }
-//    void putInitialKeyValueToInitialKeyValue_queue(){
-//        initialKeyValue_queue.add(initialKeyValue);
-//        initialKeyValue = new ArrayList<KeyValue<InputMapKey, InputMapValue>>();
-//    }
-//    void getKeyValueFromQueue(){
-//        initialKeyValue = initialKeyValue_queue.poll();
-//    }
 
     /**
      * @param inputlist
@@ -85,18 +69,6 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
             this.mappedKeyValue.add(new KeyValue<IntermediateKey, IntermediateValue>(k, v));
     }
-//
-//    public void serializeMapOutData() {
-//		try {
-//
-//			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("MapOutData_"+serializeCount+".dat"));
-//			out.writeObject(mappedKeyValue);
-//			out.close();
-//			serializeCount++;
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//    }
 
     /*
      * 显示Map阶段后的键值对
@@ -180,35 +152,4 @@ public class InputData<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     int getReduceSize() {
         return this.gKVList.size();
     }
-
-
-//    public void spillWrite() {
-//        while(true){
-//            try {
-//                if(list == null){
-//                    list = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
-//                }
-////                logger.debug(list.size());
-////                list.add(mappedKeyValue.take());
-////                writeKeyValue();
-//                if(spillCount>2000000) {
-//                    logger.debug("spillcount++");
-//                    spillfileCount++;
-//                    spillCount=0;
-//                }
-//            } catch (InterruptedException e) {
-//                break;
-//            }
-//        }
-//    }
-//    public void writeKeyValue(KeyValue<IntermediateKey, IntermediateValue> keyValue){
-//        spillCount++;
-//        File srcFile = new File("MapOutData_"+spillfileCount+".txt");
-//        try {
-//            FileUtils.writeStringToFile(srcFile,keyValue.getKey().toString()+","+keyValue.getValue().toString()+"\n","utf-8",true);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
 }
