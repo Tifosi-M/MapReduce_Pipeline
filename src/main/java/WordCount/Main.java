@@ -16,7 +16,7 @@ public class Main {
 	private static Logger logger = LogManager.getLogger(Main.class.getName());
 
 	public void init(){
-		wcMR.setParallelThreadNum(8);
+		wcMR.setParallelThreadNum(1);
 
 		try {
 			readFiles("testData/inputdata");
@@ -37,7 +37,7 @@ public class Main {
 
 	public void readFiles(String filename) throws IOException {
 		int count=0;
-		logger.info("开始读取文件==================");
+		logger.info("1G 单进程单线程粒度16MMap阶段开始读取文件==================");
 		File[] files = getFiles(filename);
 		for(File file : files) {
 			if (!file.getName().split("\\.")[0].equals("") && file.getName().split("\\.")[0].substring(0, 5).equals("input")){
@@ -52,7 +52,7 @@ public class Main {
 					}else{
 						wcMR.addKeyValue(0,sbf.toString());
 						sbf.setLength(0);
-						if(count == 800000){
+						if(count == 400000){
 							wcMR.startMap();
 							count=0;
 						}

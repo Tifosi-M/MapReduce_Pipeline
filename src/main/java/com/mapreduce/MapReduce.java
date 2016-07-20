@@ -9,10 +9,7 @@ import org.apache.logging.log4j.Logger;
 import sun.misc.Cleaner;
 import sun.nio.ch.DirectBuffer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -32,6 +29,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     private int spillfileCount = 0;
     private List<SpillThread> list_thread = new ArrayList<SpillThread>();
     private int uniqueCount = 100;
+    volatile int threadcount = 0;
 
 	/*
      * phase_mp变量确定执行Mapreduce的哪个阶段
@@ -169,7 +167,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                     if (this.inputData.getMappedKeyValueSize() > 5000000) {
                         SpillThread thread = new SpillThread();
                         thread.setSpill_list(inputData.mappedKeyValue);
-                        thread.setCount(++spillfileCount);
+                        thread.setCount(spillfileCount++);
                         inputData.mappedKeyValue = inputData.instanceMapedKeyValue();
                         list_thread.add(thread);
                         thread.start();
@@ -215,6 +213,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
         }
         logger.info("溢写合并开始");
+
         this.spillMerge();
         logger.debug("溢写合并结束");
         logger.debug("Grouping 开始");
@@ -405,7 +404,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 e.printStackTrace();
             }
             FileChannel fileChannel = raf.getChannel();
-            ByteBuffer rBuffer = ByteBuffer.allocateDirect(120 * 1024 * 1024);
+            ByteBuffer rBuffer = ByteBuffer.allocateDirect(128 * 1024 * 1024);
             try {
                 int size = spill_list.size();
                 for (int i = 0; i < size; i++) {
@@ -428,28 +427,54 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     public void spillReamin() {
         SpillThread thread = new SpillThread();
         thread.setSpill_list(inputData.mappedKeyValue);
-        thread.setCount(++spillfileCount);
+        thread.setCount(spillfileCount++);
         list_thread.add(thread);
         thread.start();
     }
 
     public void spillMerge() {
         int filecount = 0;
+//        do {
+//            File file = new File("testData/spill_out");
+//            List<String> filenames = new ArrayList<String>();
+//            File[] files = file.listFiles((FilenameFilter) new SuffixFileFilter(".txt"));
+//            for (File txtfile : files) {
+//                filenames.add(txtfile.toString());
+//            }
+//            filecount = filenames.size();
+//            for (int i = 0; i < filecount / 2; i++) {
+//                mergeFile(filenames.remove(0), filenames.remove(0));
+//                filecount--;
+//            }
+//            filenames.clear();
+//
+//        } while (filecount >= 2);
         do {
-            File[] files = getFiles("testData/spill_out");
+
+            File file = new File("testData/spill_out");
             List<String> filenames = new ArrayList<String>();
-            for (File file : files) {
-                if (!file.getName().split("\\.")[0].equals("") && !file.getName().split("\\.")[0].equals("out")) {
-                    filenames.add(file.toString());
-                }
+            File[] files = file.listFiles((FilenameFilter) new SuffixFileFilter(".txt"));
+            for (File txtfile : files) {
+                filenames.add(txtfile.toString());
             }
             filecount = filenames.size();
-            for (int i = 0; i < filecount / 2; i++) {
-                mergeFile(filenames.remove(0), filenames.remove(0));
+            int tmp = filecount;
+            for (int i = 0; i < tmp / 2; i++) {
+                new Thread(() -> {
+                    register();
+                    String[] mergefiles = getTwoMergeFiles(filenames);
+                    mergeFile(mergefiles[0], mergefiles[1]);
+                    unregister();
+                }).start();
                 filecount--;
             }
-            filenames.clear();
-
+            logger.debug(filecount);
+            while (threadcount != 0)
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
         } while (filecount >= 2);
         logger.debug("溢写合并结束");
     }
@@ -483,6 +508,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     }
 
     public void mergeFile(String filename1, String filename2) {
+        logger.debug("合并文件:"+filename1+","+filename2);
         LineIterator it1 = null;
         LineIterator it2 = null;
         LinkedList<KeyValue<String, Integer>> list_1 = new LinkedList<KeyValue<String, Integer>>();
@@ -550,13 +576,13 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             e.printStackTrace();
         }
         FileChannel fileChannel = raf.getChannel();
-        ByteBuffer rBuffer = ByteBuffer.allocateDirect(512 * 1024 * 1024);
+        ByteBuffer rBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 1024);
         try {
             int size = list_out.size();
             for (int i = 0; i < size; i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
-                if (rBuffer.limit() == rBuffer.capacity() - 2) {
+                if (rBuffer.limit() >= rBuffer.capacity() * 0.9) {
                     rBuffer.flip();
                     fileChannel.write(rBuffer);
                     rBuffer.clear();
@@ -584,6 +610,23 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         File file = new File(path);
         File[] fileList = file.listFiles();
         return fileList;
+    }
+    private void register() {
+        synchronized (this) {
+            threadcount++;
+        }
+    }
+
+    private void unregister() {
+        synchronized (this) {
+            threadcount--;
+        }
+    }
+    private synchronized String[] getTwoMergeFiles(List<String> list){
+        String[] tmp = new String[2];
+        tmp[0] = list.remove(0);
+        tmp[1] = list.remove(0);
+        return tmp;
     }
 
 
