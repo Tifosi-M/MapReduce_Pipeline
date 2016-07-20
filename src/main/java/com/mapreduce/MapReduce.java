@@ -213,12 +213,17 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
         }
         logger.info("溢写合并开始");
-
-        this.spillMerge();
-        logger.debug("溢写合并结束");
-        logger.debug("Grouping 开始");
-        this.grouping();
-        logger.debug("Grouping 结束");
+//        try {
+//            Thread.sleep(60000);
+//            System.exit(0);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        this.spillMerge();
+//        logger.debug("溢写合并结束");
+//        logger.debug("Grouping 开始");
+//        this.grouping();
+//        logger.debug("Grouping 结束");
     }
 
 
@@ -396,7 +401,9 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             }
 
             logger.debug("缓存溢写文件" + count + "开始");
-            File srcFile = new File("testData/spill_out/" + count + ".txt");
+            File dir = new File("testData/spill_out/"+StaticCount.count);
+            dir.mkdir();
+            File srcFile = new File("testData/spill_out/"+StaticCount.count+"/" + count + ".txt");
             RandomAccessFile raf = null;
             try {
                 raf = new RandomAccessFile(srcFile, "rw");
