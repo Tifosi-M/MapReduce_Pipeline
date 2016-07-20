@@ -2,8 +2,7 @@ PMT-MapReduce
 ====================
 [![OracleJDK](https://img.shields.io/badge/OracleJDK-v1.8.0-blue.svg)](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 [![OpenJDK](https://img.shields.io/badge/OpenJDK-v1.8.0-blue.svg)](http://openjdk.java.net/projects/jdk8/)
-[![Build Status](https://travis-ci.com/Tifosi-M/MapReduce_Pipeline.svg?token=NngV6Av8q7vbKbQFed4R&branch=master)](https://travis-ci.com/Tifosi-M/MapReduce_Pipeline)
-
+[![CircleCI](https://circleci.com/gh/Tifosi-M/MapReduce_Pipeline/tree/master.svg?style=svg)](https://circleci.com/gh/Tifosi-M/MapReduce_Pipeline/tree/master)
 ## Overview
 PMT-MapReduce(Pipelined Muthreading MapReduce) is a implement of MapReduce with Actor Model.And the PMT-MapReduce using Akka Framework.
 

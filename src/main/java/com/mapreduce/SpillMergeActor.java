@@ -24,6 +24,7 @@ public class SpillMergeActor extends UntypedActor {
     private static Logger loger = LogManager.getLogger(SpillMergeActor.class.getName());
     private ActorSelection groupActor;
     private int uniqueCount = 100;
+    volatile int threadcount = 0;
 
     @Override
     public void preStart() throws Exception {
@@ -32,6 +33,7 @@ public class SpillMergeActor extends UntypedActor {
     }
 
     public void mergeFile(String filename1, String filename2) {
+        loger.debug("合并文件:"+filename1+","+filename2);
         LineIterator it1 = null;
         LineIterator it2 = null;
         LinkedList<KeyValue<String, Integer>> list_1 = new LinkedList<KeyValue<String, Integer>>();
@@ -105,7 +107,7 @@ public class SpillMergeActor extends UntypedActor {
             for (int i = 0; i < size; i++) {
                 KeyValue<String, Integer> keyValue = list_out.remove(0);
                 rBuffer.put((keyValue.getKey().toString() + " " + keyValue.getValue().toString() + "\n").getBytes());
-                if (rBuffer.limit() >= rBuffer.capacity()*0.9) {
+                if (rBuffer.limit() >= rBuffer.capacity() * 0.9) {
                     rBuffer.flip();
                     fileChannel.write(rBuffer);
                     rBuffer.clear();
@@ -121,7 +123,7 @@ public class SpillMergeActor extends UntypedActor {
             fileChannel.close();
             raf.close();
             rBuffer.clear();
-            if (rBuffer == null){
+            if (rBuffer == null) {
                 System.out.println("Buffer is null");
                 return;
             }
@@ -132,10 +134,28 @@ public class SpillMergeActor extends UntypedActor {
         }
     }
 
-    public File[] getFiles(String path) {
+    private File[] getFiles(String path) {
         File file = new File(path);
         File[] fileList = file.listFiles();
         return fileList;
+    }
+
+    private void register() {
+        synchronized (this) {
+            threadcount++;
+        }
+    }
+
+    private void unregister() {
+        synchronized (this) {
+            threadcount--;
+        }
+    }
+    private synchronized String[] getTwoMergeFiles(List<String> list){
+        String[] tmp = new String[2];
+        tmp[0] = list.remove(0);
+        tmp[1] = list.remove(0);
+        return tmp;
     }
 
     @Override
@@ -145,6 +165,7 @@ public class SpillMergeActor extends UntypedActor {
             if ("StartMerge".equals(message)) {
                 int filecount = 0;
                 do {
+
                     File file = new File("testData/spill_out");
                     List<String> filenames = new ArrayList<String>();
                     File[] files = file.listFiles((FilenameFilter) new SuffixFileFilter(".txt"));
@@ -152,12 +173,19 @@ public class SpillMergeActor extends UntypedActor {
                         filenames.add(txtfile.toString());
                     }
                     filecount = filenames.size();
-                    for (int i = 0; i < filecount / 2; i++) {
-                        mergeFile(filenames.remove(0), filenames.remove(0));
+                    int tmp = filecount;
+                    for (int i = 0; i < tmp / 2; i++) {
+                        new Thread(() -> {
+                            register();
+                            String[] mergefiles = getTwoMergeFiles(filenames);
+                            mergeFile(mergefiles[0], mergefiles[1]);
+                            unregister();
+                        }).start();
                         filecount--;
                     }
-                    filenames.clear();
-
+                    loger.debug(filecount);
+                    while (threadcount != 0)
+                        Thread.sleep(5000);
                 } while (filecount >= 2);
 
                 groupActor.tell("StartGrouping", getSelf());

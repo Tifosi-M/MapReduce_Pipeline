@@ -2,8 +2,6 @@ general:
   branches:
     only:
       - master
-  artifacts:
-    - target/PMT-MapReduce-1.0-SNAPSHOT.jar
 
 machine:
   timezone: Asia/Shanghai
