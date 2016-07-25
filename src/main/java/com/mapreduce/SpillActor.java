@@ -36,11 +36,13 @@ public class SpillActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof List) {
+            loger.info("溢写阶段接受到数据-------");
             for (KeyValue<String, Integer> item : (List<KeyValue<String, Integer>>) message) {
                 mappedKeyValue.add(item);
             }
             ((List<KeyValue<String, Integer>>) message).clear();
             if (mappedKeyValue.size() > 5000000) {
+                loger.info("数据达到5000000准备进行溢写");
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue = null;
                 mappedKeyValue = new LinkedList<>();
@@ -86,7 +88,6 @@ public class SpillActor extends UntypedActor {
                     unregistThread();
                     loger.debug("文件" + tmpcount + "写入结束");
                 }).start();
-
             }
 
         }

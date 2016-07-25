@@ -20,7 +20,7 @@ public class MapActor extends UntypedActor {
 //        this.mapClass = map_class;
 //    }
     private ActorSelection spillActoy;
-    private static Logger logger = LogManager.getLogger(ReadFileActor.class.getName());
+    private static Logger logger = LogManager.getLogger(MapActor.class.getName());
 
     @Override
     public void preStart() throws Exception {
@@ -41,6 +41,7 @@ public class MapActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof List) {
+            logger.info("接受到数据-----------");
             inputData = new InputData<Integer, String, String, Integer>();
             Mapper mapper = initializeMapper();
             inputData.initialKeyValue = (ArrayList<KeyValue<Integer, String>>) message;
@@ -55,7 +56,7 @@ public class MapActor extends UntypedActor {
                 inputData.setMap(resultMapKeys.get(j), resultMapValues.get(j));
             }
             mapper = null;
-
+            logger.info("完成计算准备发送数据-------------");
             spillActoy.tell(inputData.mappedKeyValue, getSelf());
         }
         if (message instanceof String) {

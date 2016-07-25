@@ -33,6 +33,7 @@ public class ReadFileActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message.equals("start")) {
+            logger.info("开始读取数据-------");
             int count = 0;
             List<KeyValue<Integer, String>> initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
             File[] files = getFiles("testData/inputdata");
@@ -50,6 +51,7 @@ public class ReadFileActor extends UntypedActor {
                             initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
                             sbf.setLength(0);
                             if (count == 400000) {
+                                logger.info("数据读取完成发送数据至下一流水段--------");
                                 mapActor.tell(initialKeyValue, getSelf());
                                 initialKeyValue = null;
                                 initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
