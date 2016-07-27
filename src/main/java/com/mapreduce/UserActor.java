@@ -24,13 +24,12 @@ public class UserActor extends UntypedActor {
     public void preStart() throws Exception {
         logger.info("读取粒度40W,数据大小1G");
         logger.info("Actor启动");
-        readFileActor = getContext().actorOf(Props.create(ReadFileActor.class), "ReadFileActor");
-        mapActor = getContext().actorOf(Props.create(MapActor.class), "MapActor");
-        spillActor = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
-        spillMergeActor = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
-        groupActor = getContext().actorOf(Props.create(GroupActor.class),"GroupActor");
-        reduceActor = getContext().actorOf(Props.create(ReduceActor.class),"ReduceActor");
-
+        readFileActor = getContext().actorOf(Props.create(ReadFileActor.class).withDispatcher("my-dispatcher"), "ReadFileActor");
+        mapActor = getContext().actorOf(Props.create(MapActor.class).withDispatcher("my-dispatcher"), "MapActor");
+        spillActor = getContext().actorOf(Props.create(SpillActor.class).withDispatcher("my-dispatcher"), "SpillActor");
+        spillMergeActor = getContext().actorOf(Props.create(SpillMergeActor.class).withDispatcher("my-dispatcher"), "SpillMergeActor");
+        groupActor = getContext().actorOf(Props.create(GroupActor.class).withDispatcher("my-dispatcher"),"GroupActor");
+        reduceActor = getContext().actorOf(Props.create(ReduceActor.class).withDispatcher("my-dispatcher"),"ReduceActor");
     }
 
     @Override

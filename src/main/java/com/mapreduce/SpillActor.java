@@ -141,6 +141,8 @@ public class SpillActor extends UntypedActor {
                 }
                 while (thread_count != 0) ;
                 loger.info("溢写完成");
+                Thread.sleep(60000);
+                System.exit(0);
                 spillMergeActor.tell("StartMerge", getSelf());
                 context().stop(getSelf());
             }
