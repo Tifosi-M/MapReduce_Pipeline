@@ -19,7 +19,6 @@ public class UserActor extends UntypedActor {
     ActorRef spillMergeActor;
     ActorRef reduceActor;
     ActorRef spillActor2;
-    ActorRef spillActor3;
     private static Logger logger = LogManager.getLogger(UserActor.class.getName());
 
     @Override
@@ -30,7 +29,6 @@ public class UserActor extends UntypedActor {
         mapActor = getContext().actorOf(Props.create(MapActor.class), "MapActor");
         spillActor = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
         spillActor2 = getContext().actorOf(Props.create(SpillActor2.class), "SpillActor2");
-        spillActor3 = getContext().actorOf(Props.create(SpillActor2.class), "SpillActor3");
         spillMergeActor = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
         groupActor = getContext().actorOf(Props.create(GroupActor.class),"GroupActor");
         reduceActor = getContext().actorOf(Props.create(ReduceActor.class),"ReduceActor");

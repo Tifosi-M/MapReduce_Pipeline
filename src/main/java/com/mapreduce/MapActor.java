@@ -21,7 +21,6 @@ public class MapActor extends UntypedActor {
 //    }
     private ActorSelection spillActoy;
     private ActorSelection spillActor2;
-    private ActorSelection spillActor3;
     private static Logger logger = LogManager.getLogger(MapActor.class.getName());
     private int flag = 0;
 
@@ -30,7 +29,6 @@ public class MapActor extends UntypedActor {
 //        spillActoy = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
         spillActoy = getContext().actorSelection("../SpillActor");
         spillActor2 = getContext().actorSelection("../SpillActor2");
-        spillActor3 = getContext().actorSelection("../SpillActor3");
     }
 
     Mapper<Integer, String, String, Integer> initializeMapper() {
@@ -67,8 +65,6 @@ public class MapActor extends UntypedActor {
                 flag++;
             } else if (flag == 1) {
                 spillActor2.tell(inputData.mappedKeyValue, getSelf());
-                flag++;
-            } else if (flag == 2) {
                 flag = 0;
             }
         }
