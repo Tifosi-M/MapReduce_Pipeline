@@ -20,7 +20,7 @@ import java.util.*;
  * Created by szp on 16/5/27.
  */
 public class SpillActor extends UntypedActor {
-    private List<KeyValue<String, Integer>> mappedKeyValue = new LinkedList<KeyValue<String, Integer>>();
+    private List<KeyValue<String, Integer>> mappedKeyValue = new ArrayList<KeyValue<String, Integer>>();
     //    private int count = 0;
     private static Logger loger = LogManager.getLogger(SpillActor.class.getName());
     private ActorSelection spillMergeActor;
@@ -40,11 +40,11 @@ public class SpillActor extends UntypedActor {
                 mappedKeyValue.add(item);
             }
             ((List<KeyValue<String, Integer>>) message).clear();
-            if (mappedKeyValue.size() > 5000000) {
-                loger.info("数据达到5000000准备进行溢写");
+            if (mappedKeyValue.size() > 500000) {
+                loger.info("数据达到50000准备进行溢写");
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue = null;
-                mappedKeyValue = new LinkedList<>();
+                mappedKeyValue = new ArrayList<>();
 //                    Collections.sort(tmp);
                 KeyValue[] tmps = tmp.toArray(new KeyValue[0]);
                 QuickSort<KeyValue<String, Integer>> quickSort = new QuickSort<KeyValue<String, Integer>>(tmps);
@@ -71,6 +71,10 @@ public class SpillActor extends UntypedActor {
                         it.set(e);
                     }
                     spillMergeActor.tell(mappedKeyValue,getSelf());
+                    loger.debug("溢写结束");
+                    spillMergeActor.tell("SpillEnd",getSelf());
+                    context().stop(getSelf());
+                }else{
                     spillMergeActor.tell("SpillEnd",getSelf());
                 }
             }

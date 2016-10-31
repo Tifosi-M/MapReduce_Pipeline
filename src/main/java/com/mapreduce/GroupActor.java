@@ -38,22 +38,31 @@ public class GroupActor extends UntypedActor {
 
     public List mergeList(List<KeyValue<String, Integer>> list_1, List<KeyValue<String, Integer>> list_2) {
         List<KeyValue<String, Integer>> list_out = new ArrayList<>();
-        while (list_1.size() != 0 || list_2.size() != 0) {
-            if (list_1.size() != 0 && list_2.size() != 0) {
-                KeyValue<String, Integer> keyValue1 = list_1.get(0);
-                KeyValue<String, Integer> keyValue2 = list_2.get(0);
+        int i = 0, j = 0;
+        int list1_size = list_1.size();
+        int list2_size = list_2.size();
+        while (list1_size != 0 || list2_size != 0) {
+            if (list1_size != 0 && list2_size != 0) {
+                KeyValue<String, Integer> keyValue1 = list_1.get(i);
+                KeyValue<String, Integer> keyValue2 = list_2.get(j);
                 if (keyValue1.compareTo(keyValue2) < 0) {
                     list_out.add(keyValue1);
-                    list_1.remove(0);
+                    i++;
+                    list1_size--;
                 } else {
                     list_out.add(keyValue2);
-                    list_2.remove(0);
+                    j++;
+                    list2_size--;
                 }
             } else {
-                if (list_1.size() == 0) {
-                    list_out.add(list_2.remove(0));
-                } else {
-                    list_out.add(list_1.remove(0));
+                if (list1_size == 0) {
+                    list_out.add(list_2.get(j));
+                    j++;
+                    list2_size--;
+                } else if (list2_size == 0) {
+                    list_out.add(list_1.get(i));
+                    i++;
+                    list1_size--;
                 }
             }
         }
@@ -80,21 +89,23 @@ public class GroupActor extends UntypedActor {
         if (message instanceof String) {
             if ("MergeEnd".equals(message)) {
                 sign++;
-                if (sign == 1) {
+                if (sign == 2) {
+                    logger.debug("接受完所有数据,Group阶段开始");
                     int list_count = queue.size();
                     do {
                         int tmp = list_count;
                         for (int i = 0; i < tmp / 2; i++) {
-                            new Thread(() -> {
-                                register();
+//                            new Thread(() -> {
+//                                register();
                                 queue.add(mergeList(queue.poll(), queue.poll()));
-                                unregister();
-                            }).start();
+                                System.out.println(queue.size());
+//                                unregister();
+//                            }).start();
                             list_count--;
-                            System.out.println(queue.size());
-                        }//hello my order is . could you help me inquiry the track number of chinese carrier.
-                        while (threadcount != 0)
-                            Thread.sleep(5000);
+
+                        }
+//                        while (threadcount != 0)
+//                            Thread.sleep(5000);
                     } while (list_count > 1);
 
                     list = queue.poll();
@@ -121,6 +132,9 @@ public class GroupActor extends UntypedActor {
                     reduceActor.tell(gKVList, getSelf());
 
                 }
+            }
+            if ("test".equals(message)) {
+                System.out.print(message);
             }
 //            if ("StartGrouping".equals(message)) {
 //                logger.info("Grouping阶段开始");

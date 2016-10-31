@@ -35,27 +35,37 @@ public class SpillMergeActor extends UntypedActor {
 
     public List mergeList(List<KeyValue<String, Integer>> list_1, List<KeyValue<String, Integer>> list_2) {
         List<KeyValue<String, Integer>> list_out = new ArrayList<>();
-        while (list_1.size() != 0 || list_2.size() != 0) {
-            if (list_1.size() != 0 && list_2.size() != 0) {
-                KeyValue<String, Integer> keyValue1 = list_1.get(0);
-                KeyValue<String, Integer> keyValue2 = list_2.get(0);
+        int i = 0, j = 0;
+        int list1_size = list_1.size();
+        int list2_size = list_2.size();
+        while (list1_size != 0 || list2_size != 0) {
+            if (list1_size != 0 && list2_size != 0) {
+                KeyValue<String, Integer> keyValue1 = list_1.get(i);
+                KeyValue<String, Integer> keyValue2 = list_2.get(j);
                 if (keyValue1.compareTo(keyValue2) < 0) {
                     list_out.add(keyValue1);
-                    list_1.remove(0);
+                    i++;
+                    list1_size--;
                 } else {
                     list_out.add(keyValue2);
-                    list_2.remove(0);
+                    j++;
+                    list2_size--;
                 }
             } else {
-                if (list_1.size() == 0) {
-                    list_out.add(list_2.remove(0));
-                } else {
-                    list_out.add(list_1.remove(0));
+                if (list1_size == 0) {
+                    list_out.add(list_2.get(j));
+                    j++;
+                    list2_size--;
+                } else if (list2_size == 0) {
+                    list_out.add(list_1.get(i));
+                    i++;
+                    list1_size--;
                 }
             }
         }
         return list_out;
     }
+
 
     @Override
     public void onReceive(Object message) throws Exception {
@@ -65,7 +75,7 @@ public class SpillMergeActor extends UntypedActor {
                 for(int i =0 ;i<queue.size();i++)
                     groupActor.tell(queue.poll(),getSelf());
                 groupActor.tell("MergeEnd", getSelf());
-//                context().stop(getSelf());
+                context().stop(getSelf());
             }
         }
         if (message instanceof List) {
