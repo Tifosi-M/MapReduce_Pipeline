@@ -80,7 +80,7 @@ public class GroupActor extends UntypedActor {
         if (message instanceof String) {
             if ("MergeEnd".equals(message)) {
                 sign++;
-                if (sign == 2) {
+                if (sign == 1) {
                     int list_count = queue.size();
                     do {
                         int tmp = list_count;

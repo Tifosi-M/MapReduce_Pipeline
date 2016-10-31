@@ -40,7 +40,7 @@ public class SpillActor extends UntypedActor {
                 mappedKeyValue.add(item);
             }
             ((List<KeyValue<String, Integer>>) message).clear();
-            if (mappedKeyValue.size() > 40000) {
+            if (mappedKeyValue.size() > 5000000) {
                 loger.info("数据达到5000000准备进行溢写");
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue = null;

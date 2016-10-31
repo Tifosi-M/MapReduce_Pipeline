@@ -62,7 +62,8 @@ public class SpillMergeActor extends UntypedActor {
         if (message instanceof String) {
             loger.info("开始进行溢写合并");
             if ("SpillEnd".equals(message)) {
-
+                for(int i =0 ;i<queue.size();i++)
+                    groupActor.tell(queue.poll(),getSelf());
                 groupActor.tell("MergeEnd", getSelf());
 //                context().stop(getSelf());
             }
