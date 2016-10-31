@@ -28,7 +28,6 @@ public class MapActor extends UntypedActor {
     public void preStart() throws Exception {
 //        spillActoy = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
         spillActoy = getContext().actorSelection("../SpillActor");
-        spillActor2 = getContext().actorSelection("../SpillActor2");
     }
 
     Mapper<Integer, String, String, Integer> initializeMapper() {
@@ -60,13 +59,7 @@ public class MapActor extends UntypedActor {
             }
             mapper = null;
             logger.info("完成计算准备发送数据-------------");
-            if (flag == 0) {
-                spillActoy.tell(inputData.mappedKeyValue, getSelf());
-                flag++;
-            } else if (flag == 1) {
-                spillActor2.tell(inputData.mappedKeyValue, getSelf());
-                flag = 0;
-            }
+            spillActoy.tell(inputData.mappedKeyValue, getSelf());
         }
         if (message instanceof String) {
             if ("END".equals(message)) {

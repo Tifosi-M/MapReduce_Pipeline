@@ -72,6 +72,11 @@
             <version>2.3.15</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote_2.10</artifactId>
+            <version>2.3.15</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

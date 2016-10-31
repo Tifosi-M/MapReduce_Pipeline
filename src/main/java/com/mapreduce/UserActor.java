@@ -1,9 +1,6 @@
 package com.mapreduce;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,6 +16,7 @@ public class UserActor extends UntypedActor {
     ActorRef spillMergeActor;
     ActorRef reduceActor;
     ActorRef spillActor2;
+    ActorSelection cli;
     private static Logger logger = LogManager.getLogger(UserActor.class.getName());
 
     @Override
@@ -28,22 +26,24 @@ public class UserActor extends UntypedActor {
         readFileActor = getContext().actorOf(Props.create(ReadFileActor.class), "ReadFileActor");
         mapActor = getContext().actorOf(Props.create(MapActor.class), "MapActor");
         spillActor = getContext().actorOf(Props.create(SpillActor.class), "SpillActor");
-        spillActor2 = getContext().actorOf(Props.create(SpillActor2.class), "SpillActor2");
         spillMergeActor = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
-        groupActor = getContext().actorOf(Props.create(GroupActor.class),"GroupActor");
-        reduceActor = getContext().actorOf(Props.create(ReduceActor.class),"ReduceActor");
+        groupActor = getContext().actorOf(Props.create(GroupActor.class), "GroupActor");
+        reduceActor = getContext().actorOf(Props.create(ReduceActor.class), "ReduceActor");
+        cli = getContext().actorSelection("akka.tcp://test@127.0.0.1:5150/user/UserActor");
     }
 
     @Override
     public void onReceive(Object message) throws Exception {
-        if(message instanceof String){
-            if("start".equals(message))
+        if (message instanceof String) {
+            if ("start".equals(message))
                 readFileActor.tell("start", getSelf());
+//            cli.tell("test",ActorRef.noSender());
         }
     }
-    public static void main(String[] args){
+
+    public static void main(String[] args) {
         system = ActorSystem.create("actor-mapreduce-java");
-        ActorRef userActor = system.actorOf(Props.create(UserActor.class),"UserActor");
-        userActor.tell("start",ActorRef.noSender());
+        ActorRef userActor = system.actorOf(Props.create(UserActor.class), "UserActor");
+        userActor.tell("start", ActorRef.noSender());
     }
 }
