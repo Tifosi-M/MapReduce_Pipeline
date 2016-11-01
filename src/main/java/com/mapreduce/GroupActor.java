@@ -2,16 +2,9 @@ package com.mapreduce;
 
 import akka.actor.ActorSelection;
 import akka.actor.UntypedActor;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import org.apache.commons.io.filefilter.SuffixFileFilter;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +20,6 @@ public class GroupActor extends UntypedActor {
     private static Logger logger = LogManager.getLogger(GroupActor.class.getName());
     private Queue<List<KeyValue<String, Integer>>> queue = new LinkedList<List<KeyValue<String, Integer>>>();
     private int sign = 0;//栅栏同步标记位
-    private int test = 0;
     volatile int threadcount = 0;
 
     @Override
@@ -112,7 +104,6 @@ public class GroupActor extends UntypedActor {
                     String tmpKey;
                     GroupedKeyValue<String, Integer> gkv;
 
-
                     String conKey = list.get(0).getKey();
                     gkv = new GroupedKeyValue<String, Integer>(conKey, new GroupedValues<Integer>(list.get(0).getValue()));
 
@@ -133,56 +124,6 @@ public class GroupActor extends UntypedActor {
 
                 }
             }
-            if ("test".equals(message)) {
-                System.out.print(message);
-            }
-//            if ("StartGrouping".equals(message)) {
-//                logger.info("Grouping阶段开始");
-//                File file = new File("testData/spill_out");
-//                String[] names = file.list(new SuffixFileFilter(".txt"));
-//
-//                File srcFile = new File("testData/spill_out/" + names[0]);
-//                LineIterator it = null;
-//                try {
-//                    it = FileUtils.lineIterator(srcFile, "UTF-8");
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                try {
-//                    while (it.hasNext()) {
-//                        String line = it.nextLine();
-//                        String[] str = line.split(" ");
-//                        list.add(new KeyValue<String, Integer>(str[0], (Integer.valueOf(str[1]))));
-//                    }
-//                } catch (ArrayIndexOutOfBoundsException e) {
-//                    e.printStackTrace();
-//
-//                } finally {
-//                    LineIterator.closeQuietly(it);
-//                }
-//                String tmpKey;
-//                GroupedKeyValue<String, Integer> gkv;
-//
-//
-//                String conKey = list.get(0).getKey();
-//                gkv = new GroupedKeyValue<String, Integer>(conKey, new GroupedValues<Integer>(list.get(0).getValue()));
-//
-//                for (int i = 1; i < list.size(); i++) {
-//                    tmpKey = list.get(i).getKey();
-//
-//                    if (tmpKey.equals(gkv.getKey())) {
-//                        gkv.addValue(list.get(i).getValue());
-//                    } else {
-//                        gKVList.add(gkv);
-//                        conKey = tmpKey;
-//                        gkv = new GroupedKeyValue<String, Integer>(conKey, new GroupedValues<Integer>(list.get(i).getValue()));
-//                    }
-//                }
-//                gKVList.add(gkv);
-//                logger.info("Grouping 阶段结束");
-//                reduceActor.tell(gKVList, getSelf());
-//                context().stop(getSelf());
-//            }
         }
     }
 }

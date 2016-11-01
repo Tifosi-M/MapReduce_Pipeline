@@ -15,8 +15,6 @@ public class UserActor extends UntypedActor {
     ActorRef groupActor;
     ActorRef spillMergeActor;
     ActorRef reduceActor;
-    ActorRef spillActor2;
-    ActorSelection cli;
     private static Logger logger = LogManager.getLogger(UserActor.class.getName());
 
     @Override
@@ -29,7 +27,6 @@ public class UserActor extends UntypedActor {
         spillMergeActor = getContext().actorOf(Props.create(SpillMergeActor.class), "SpillMergeActor");
         groupActor = getContext().actorOf(Props.create(GroupActor.class), "GroupActor");
         reduceActor = getContext().actorOf(Props.create(ReduceActor.class), "ReduceActor");
-        cli = getContext().actorSelection("akka.tcp://test@127.0.0.1:5150/user/UserActor");
     }
 
     @Override
@@ -37,7 +34,6 @@ public class UserActor extends UntypedActor {
         if (message instanceof String) {
             if ("start".equals(message))
                 readFileActor.tell("start", getSelf());
-//            cli.tell("test",ActorRef.noSender());
         }
     }
 
