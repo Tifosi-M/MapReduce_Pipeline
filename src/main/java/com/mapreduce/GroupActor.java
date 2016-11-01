@@ -81,23 +81,23 @@ public class GroupActor extends UntypedActor {
         if (message instanceof String) {
             if ("MergeEnd".equals(message)) {
                 sign++;
-                if (sign == 2) {
+                if (sign == 1) {
                     logger.debug("接受完所有数据,Group阶段开始");
                     int list_count = queue.size();
                     do {
                         int tmp = list_count;
                         for (int i = 0; i < tmp / 2; i++) {
-//                            new Thread(() -> {
-//                                register();
+                            register();
+                            new Thread(() -> {
                                 queue.add(mergeList(queue.poll(), queue.poll()));
                                 System.out.println(queue.size());
-//                                unregister();
-//                            }).start();
+                                unregister();
+                            }).start();
                             list_count--;
 
                         }
-//                        while (threadcount != 0)
-//                            Thread.sleep(5000);
+                        while (threadcount != 0)
+                            Thread.sleep(5000);
                     } while (list_count > 1);
 
                     list = queue.poll();
