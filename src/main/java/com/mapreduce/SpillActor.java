@@ -31,7 +31,7 @@ public class SpillActor extends UntypedActor {
             }
             ((List<KeyValue<String, Integer>>) message).clear();
             if (mappedKeyValue.size() > 500000) {
-                loger.info("数据达到50000准备进行溢写");
+                loger.debug("数据达到50000准备进行溢写");
                 List<KeyValue<String, Integer>> tmp = mappedKeyValue;
                 mappedKeyValue = null;
                 mappedKeyValue = new ArrayList<>();
@@ -61,7 +61,7 @@ public class SpillActor extends UntypedActor {
                         it.set(e);
                     }
                     spillMergeActor.tell(mappedKeyValue,getSelf());
-                    loger.debug("溢写结束");
+                    loger.info("溢写结束");
                     spillMergeActor.tell("SpillEnd",getSelf());
                     context().stop(getSelf());
                 }else{

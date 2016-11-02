@@ -28,7 +28,7 @@ public class GroupedValues<V> implements Iterable<V> , Iterator<V> {
 	}
 	
 	boolean hasValue(){
-		return index <= 0 ? false : true;
+		return index > 0;
 	}
 	
 	V get(){

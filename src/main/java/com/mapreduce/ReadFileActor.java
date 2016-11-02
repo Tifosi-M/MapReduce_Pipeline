@@ -51,7 +51,7 @@ public class ReadFileActor extends UntypedActor {
                             initialKeyValue.add(new KeyValue<Integer, String>(0, sbf.toString()));
                             sbf.setLength(0);
                             if (count == 40000) {
-                                logger.info("数据读取完成发送数据至下一流水段--------");
+                                logger.debug("数据读取完成发送数据至下一流水段--------");
                                 mapActor.tell(initialKeyValue, getSelf());
                                 initialKeyValue = null;
                                 initialKeyValue = new ArrayList<KeyValue<Integer, String>>();
