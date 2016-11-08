@@ -75,7 +75,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
 	
 	/*
-	 * addKeyValue
+     * addKeyValue
 	 * pass data formated as key-value pairs to inputData
 	 */
 
@@ -203,7 +203,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 1.排序
      * 2.合并
      */
-    public void startShuffle() {
+    public void startShuffle1() {
         spillReamin();
         for (SpillThread thread : list_thread) {
             try {
@@ -216,6 +216,10 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
         this.spillMerge();
         logger.debug("溢写合并结束");
+
+    }
+
+    public void startShuffle2() {
         logger.debug("Grouping 开始");
         this.grouping();
         logger.debug("Grouping 结束");
@@ -342,7 +346,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         startMap();
         logger.debug("==================Map阶段结束=======================");
         logger.debug("================启动Shuffle阶段=====================");
-        startShuffle();
+        startShuffle1();
         logger.debug("==================Shuffle阶段结束===================");
         logger.debug("==================启动Reduce阶段====================");
         startReduce();
@@ -482,33 +486,62 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
     public void grouping() {
 
         File file = new File("testData/spill_out");
-        String[] names = file.list( new SuffixFileFilter(".txt"));
-        File srcFile = new File("testData/spill_out/"+names[0]);
-        LineIterator it = null;
-        try {
-            it = FileUtils.lineIterator(srcFile, "UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            while (it.hasNext()) {
-                String line = it.nextLine();
-                String[] str = line.split(" ");
-                IntermediateKey key = (IntermediateKey) str[0];
-                IntermediateValue value = (IntermediateValue) (Integer.valueOf(str[1]));
-                this.inputData.list.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+        String[] names = file.list(new SuffixFileFilter(".txt"));
+        Queue<List<KeyValue<IntermediateKey, IntermediateValue>>> queue = new LinkedList<List<KeyValue<IntermediateKey, IntermediateValue>>>();
+        List<KeyValue<IntermediateKey, IntermediateValue>> tmplist = new ArrayList<KeyValue<IntermediateKey, IntermediateValue>>();
+        for (String name : names) {
+            File srcFile = new File("testData/spill_out/" + name);
+            LineIterator it = null;
+            try {
+                it = FileUtils.lineIterator(srcFile, "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
+            try {
+                while (it.hasNext()) {
+                    String line = it.nextLine();
+                    String[] str = line.split(" ");
+                    IntermediateKey key = (IntermediateKey) str[0];
+                    IntermediateValue value = (IntermediateValue) (Integer.valueOf(str[1]));
+                    tmplist.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+//                    this.inputData.list.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                e.printStackTrace();
 
-        } finally {
-            LineIterator.closeQuietly(it);
+            } finally {
+                LineIterator.closeQuietly(it);
+            }
+            queue.add(tmplist);
         }
+        if (queue.size() > 1) {
+            int list_count = queue.size();
+            do {
+                int tmp = list_count;
+                for (int i = 0; i < tmp / 2; i++) {
+                    logger.debug(queue.size());
+                    register();
+                    new Thread(() -> {
+                        queue.add(mergeList(queue.poll(), queue.poll()));
+                        unregister();
+                    }).start();
+                    list_count--;
+                }
+                while (threadcount != 0)
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+            } while (list_count > 1);
+        }
+
+        this.inputData.list = queue.poll();
         inputData.grouping();
     }
 
     public void mergeFile(String filename1, String filename2) {
-        logger.debug("合并文件:"+filename1+","+filename2);
+        logger.debug("合并文件:" + filename1 + "," + filename2);
         LineIterator it1 = null;
         LineIterator it2 = null;
         LinkedList<KeyValue<String, Integer>> list_1 = new LinkedList<KeyValue<String, Integer>>();
@@ -611,6 +644,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
         File[] fileList = file.listFiles();
         return fileList;
     }
+
     private void register() {
         synchronized (this) {
             threadcount++;
@@ -622,12 +656,44 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             threadcount--;
         }
     }
-    private synchronized String[] getTwoMergeFiles(List<String> list){
+
+    private synchronized String[] getTwoMergeFiles(List<String> list) {
         String[] tmp = new String[2];
         tmp[0] = list.remove(0);
         tmp[1] = list.remove(0);
         return tmp;
     }
-
+    public List mergeList(List<KeyValue<IntermediateKey, IntermediateValue>> list_1, List<KeyValue<IntermediateKey, IntermediateValue>> list_2) {
+        List<KeyValue<IntermediateKey, IntermediateValue>> list_out = new ArrayList<>();
+        int i = 0, j = 0;
+        int list1_size = list_1.size();
+        int list2_size = list_2.size();
+        while (list1_size != 0 || list2_size != 0) {
+            if (list1_size != 0 && list2_size != 0) {
+                KeyValue<IntermediateKey, IntermediateValue> keyValue1 = list_1.get(i);
+                KeyValue<IntermediateKey, IntermediateValue> keyValue2 = list_2.get(j);
+                if (keyValue1.compareTo(keyValue2) < 0) {
+                    list_out.add(keyValue1);
+                    i++;
+                    list1_size--;
+                } else {
+                    list_out.add(keyValue2);
+                    j++;
+                    list2_size--;
+                }
+            } else {
+                if (list1_size == 0) {
+                    list_out.add(list_2.get(j));
+                    j++;
+                    list2_size--;
+                } else if (list2_size == 0) {
+                    list_out.add(list_1.get(i));
+                    i++;
+                    list1_size--;
+                }
+            }
+        }
+        return list_out;
+    }
 
 }

@@ -1,94 +1,19 @@
 package WordCount;
 
+import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import com.mapreduce.*;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.*;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 
 public class Main {
-	MapReduce<Integer, String, String, Integer, String, Integer> wcMR =
-			new MapReduce<Integer, String, String, Integer, String, Integer>(MapWC.class, ReduceWC.class, "MAP_REDUCE");
-	private static Logger logger = LogManager.getLogger(Main.class.getName());
-
-	public void init(){
-		wcMR.setParallelThreadNum(1);
-
-		try {
-			readFiles("testData/inputdata");
-
-			wcMR.startShuffle();
-			wcMR.startReduce();
-			wcMR.writeToFile();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-	}
-	public File[] getFiles(String path){
-		File file = new File(path);
-		File[] fileList = file.listFiles();
-		return fileList;
-	}
-
-	public void readFiles(String filename) throws IOException {
-		int count=0;
-		logger.info("1G 单进程单线程粒度16MMap阶段开始读取文件==================");
-		File[] files = getFiles(filename);
-		for(File file : files) {
-			if (!file.getName().split("\\.")[0].equals("") && file.getName().split("\\.")[0].substring(0, 5).equals("input")){
-				RandomAccessFile raf = new RandomAccessFile(new File(file.toString()), "r");
-				FileChannel fc = raf.getChannel();
-				MappedByteBuffer mbb =  fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-				StringBuffer sbf = new StringBuffer();
-				while(mbb.remaining()>0){
-					char data = (char)mbb.get();
-					if(data!='\n'){
-						sbf.append(data);
-					}else{
-						wcMR.addKeyValue(0,sbf.toString());
-						sbf.setLength(0);
-						if(count == 400000){
-							wcMR.startMap();
-							count=0;
-						}
-						count++;
-					}
-				}
-				fc.close();
-				raf.close();
-			}
-		}
-
-//		LineIterator it = FileUtils.lineIterator(new File(filename), "UTF-8");
-//		try {
-//			while (it.hasNext()) {
-//				String line = it.nextLine();
-//				wcMR.addKeyValue(0, line);
-//				if (count == 800000) {
-//					wcMR.startMap();
-//					count = 0;
-//				}
-//				count++;
-//			}
-//		} finally {
-//			LineIterator.closeQuietly(it);
-//		}
-		logger.info("文件全部读取完成");
-		wcMR.startMap();
-
-	}
-	public void run(){
-		wcMR.run();
-	}
-
 	public static void main(String[] args) {
-		Main main = new Main();
-		main.init();
+		ActorSystem system = ActorSystem.create("mapreduce");
+		ActorSelection slave = system.actorSelection("akka.tcp://map@127.0.0.1:5150/user/mapActor");
+		ActorRef mapActor = system.actorOf(Props.create(MapPhaseActor.class),"mapActor");
+		ActorRef reduceActor = system.actorOf(Props.create(ReducePhaseActor.class),"reduceActor");
+		mapActor.tell("start", ActorRef.noSender());
+		slave.tell("start",ActorRef.noSender());
 	}
 
 
