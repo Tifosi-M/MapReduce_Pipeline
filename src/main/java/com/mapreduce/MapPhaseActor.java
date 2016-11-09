@@ -24,7 +24,7 @@ public class MapPhaseActor extends UntypedActor {
     private Logger logger = LogManager.getLogger(MapPhaseActor.class.getName());
     private ActorSelection reduceActor = null;
     private ActorRef serverActor = null;
-    private ActorSelection slave = getContext().actorSelection("akka.tcp://map@localhost:5150/user/mapActor");
+    private ActorSelection slave = getContext().actorSelection("akka.tcp://map@slave.tifosi-m.com:5150/user/mapActor");
     public void preStart() throws Exception {
         reduceActor = context().actorSelection("../reduceActor");
         serverActor = getContext().actorOf(ServerActor.props(null), "serverActor");
