@@ -103,10 +103,6 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
             maptasks.add(new FutureTask<Mapper<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>>(new MapCallable<InputMapKey, InputMapValue, IntermediateKey, IntermediateValue>()));
         }
 
-
-//        for (int k=0;k<this.inputData.initialKeyValue_queue.size();k++) {
-//            inputData.getKeyValueFromQueue();
-
         int x = this.inputData.getMapSize() / this.parallelThreadNum;//每个线程处理的inputdata键值对个数
         for (int i = 0; i < this.inputData.getMapSize() / this.parallelThreadNum; i++) {
             for (int j = 0; j < this.parallelThreadNum; j++) {
@@ -325,23 +321,7 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
      * 执行MapReduce
      */
     public void run() {
-//        startMap();
-//
-//        if (this.phaseMR.equals("MAP_ONLY")) {
-//            if (this.resultOutput)
-//                //inputData.showMap();
-//            return;
-//        }
-//
-//        startShuffle();
-//        if (this.phaseMR.equals("MAP_SHUFFLE")) {
-//            if (this.resultOutput)
-//                inputData.showSuffle();
-//            return;
-//        }
-//        startReduce();
-//        if (this.resultOutput)
-//            outputData.reduceShow();
+
         logger.debug("==================启动Map阶段=======================");
         startMap();
         logger.debug("==================Map阶段结束=======================");
@@ -438,21 +418,6 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
 
     public void spillMerge() {
         int filecount = 0;
-//        do {
-//            File file = new File("testData/spill_out");
-//            List<String> filenames = new ArrayList<String>();
-//            File[] files = file.listFiles((FilenameFilter) new SuffixFileFilter(".txt"));
-//            for (File txtfile : files) {
-//                filenames.add(txtfile.toString());
-//            }
-//            filecount = filenames.size();
-//            for (int i = 0; i < filecount / 2; i++) {
-//                mergeFile(filenames.remove(0), filenames.remove(0));
-//                filecount--;
-//            }
-//            filenames.clear();
-//
-//        } while (filecount >= 2);
         do {
 
             File file = new File("testData/spill_out");
