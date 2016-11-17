@@ -24,10 +24,8 @@ public class MapPhaseActor extends UntypedActor {
     private Logger logger = LogManager.getLogger(MapPhaseActor.class.getName());
     private ActorSelection reduceActor = null;
     private ActorRef serverActor = null;
-    private ActorSelection slave = getContext().actorSelection("akka.tcp://map@slave.tifosi-m.com:5150/user/mapActor");
     public void preStart() throws Exception {
         reduceActor = context().actorSelection("../reduceActor");
-        serverActor = getContext().actorOf(ServerActor.props(null), "serverActor");
     }
 
     public File[] getFiles(String path){
@@ -65,7 +63,6 @@ public class MapPhaseActor extends UntypedActor {
         }
         logger.info("文件全部读取完成");
         wcMR.startMap();
-
     }
     @Override
     public void onReceive(Object message) throws Throwable {
@@ -74,10 +71,14 @@ public class MapPhaseActor extends UntypedActor {
                 wcMR.setParallelThreadNum(1);
                 readFiles("testData/inputdata");
                 wcMR.startShuffle1();
+                reduceActor.tell("startReduce",ActorRef.noSender ());
+
             }else if("fileComplete".equals(message)){
                 serverActor.tell("stop",ActorRef.noSender());
                 reduceActor.tell("startReduce",ActorRef.noSender ());
                 context().stop(getSelf());
+            }else if("startTcp".equals(message)){
+                serverActor = getContext().actorOf(ServerActor.props(null), "serverActor");
             }
         }
 

@@ -501,9 +501,15 @@ public class MapReduce<InputMapKey extends Comparable<InputMapKey>, InputMapValu
                 while (it.hasNext()) {
                     String line = it.nextLine();
                     String[] str = line.split(" ");
-                    IntermediateKey key = (IntermediateKey) str[0];
-                    IntermediateValue value = (IntermediateValue) (Integer.valueOf(str[1]));
-                    tmplist.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+                    try{
+                        IntermediateKey key = (IntermediateKey) str[0];
+                        IntermediateValue value = (IntermediateValue) (Integer.valueOf(str[1]));
+                        tmplist.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
+                    }catch (Exception e){
+                        logger.debug("a keyvalue error");
+                    }
+
+
 //                    this.inputData.list.add(new KeyValue<IntermediateKey, IntermediateValue>(key, value));
                 }
             } catch (ArrayIndexOutOfBoundsException e) {

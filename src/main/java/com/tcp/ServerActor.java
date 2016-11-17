@@ -1,6 +1,7 @@
 package com.tcp;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.io.Tcp;
@@ -13,7 +14,7 @@ import java.net.InetSocketAddress;
  */
 public class ServerActor extends UntypedActor {
     private ActorRef tcpActor;
-
+    ActorSelection slave = getContext().actorSelection("akka.tcp://map@slave.tifosi-m.com:5150/user/mapActor");
 
     @Override
     public void preStart() throws Exception {
@@ -37,6 +38,7 @@ public class ServerActor extends UntypedActor {
     public void onReceive(Object message) throws Throwable {
         if (message instanceof Tcp.Bound) {
             System.out.println("In ServerActor - received message: bound");
+            slave.tell("ok",getSelf());
 
         } else if (message instanceof Tcp.CommandFailed) {
             getContext().stop(getSelf());

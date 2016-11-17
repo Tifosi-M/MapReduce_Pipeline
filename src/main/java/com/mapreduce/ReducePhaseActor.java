@@ -17,7 +17,7 @@ public class ReducePhaseActor extends UntypedActor{
         if(message instanceof String){
             if("startReduce".equals(message)){
                 sign++;
-                if(sign==2){
+                if(sign==1){
                     wcMR.startShuffle2();
                     wcMR.startReduce();
                     wcMR.writeToFile();
